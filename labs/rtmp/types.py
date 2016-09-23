@@ -9,8 +9,7 @@ by faucamp, based in the Java programming language. It has only been slightly al
 # TODO: The file name has been altered to types.py and variables names have been modified.
 # TODO: The shared object event types and user control types have been placed in here along with AMF3 types.
 
-
-# === data types ===
+# === Data types ===
 
 # This is used in the case that the data type we receive could not be recognised.
 DT_NONE = -0x1  # -1
@@ -128,10 +127,10 @@ DT_COMMAND = 0x14  # 20
 DT_AGGREGATE_MESSAGE = 0x16  # 22
 
 
-# === user control types ===
+# === User Control types ===
 
 # This is used in the case that the data type we receive could not be recognised.
-UC_NONE = -0x1  # -1
+# UC_NONE = -0x1  # -1
 
 # Type: 0
 # The server sends this event to notify the client that a stream has become
@@ -234,7 +233,7 @@ UC_BUFFER_EMPTY = 0x1F  # 31
 
 UC_BUFFER_READY = 0x20  # 32
 
-# === shared object types ===
+# === Shared Object types ===
 
 # Shared Object connection
 SO_USE = 0x1  # 1
@@ -268,6 +267,34 @@ SO_REQUEST_MOVE = 0x0A  # 10
 
 # Initial SO data flag
 SO_USE_SUCCESS = 0x0B  # 11
+
+# TODO: Rename these appropriately.
+# === Header types ===
+
+TYPE_0_FULL = 0x00
+
+TYPE_1_SAME_STREAM = 0x01
+
+TYPE_2_SAME_LENGTH_AND_STREAM = 0x02
+
+TYPE_3_CONTINUATION = 0x03
+
+# === Default channels ===
+
+RTMP_STREAM_CHANNEL = 0x08
+
+RTMP_COMMAND_CHANNEL = 0x03
+
+CONTROL_CHANNEL = 0x02
+
+# === Default acknowledgement limit types ===
+
+HARD = 0
+
+SOFT = 1
+
+DYNAMIC = 2
+
 
 
 
