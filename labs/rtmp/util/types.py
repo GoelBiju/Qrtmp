@@ -12,7 +12,7 @@ by faucamp, based in the Java programming language. It has only been slightly al
 # === Data types ===
 
 # This is used in the case that the data type we receive could not be recognised.
-DT_NONE = -0x1  # -1
+# DT_NONE = -0x1  # -1
 
 # Protocol control message 1
 # Set Chunk Size, is used to notify the peer a new maximum chunk size to use.
@@ -201,7 +201,7 @@ UC_PING_REQUEST = 0x06  # 6
 # Event Data:
 # eventData[0]: the 4-byte timestamp which was received with the PING_REQUEST.
 
-UC_PONG_REPLY = 0x07  # 7
+UC_PING_RESPONSE = 0x07  # 7
 
 # Type: 31 (0x1F)
 
@@ -281,18 +281,33 @@ TYPE_3_CONTINUATION = 0x03
 
 # === Default channels ===
 
-RTMP_STREAM_CHANNEL = 0x08
+# INFO:
+RTMP_CONNECTION_CHANNEL = 0x00
 
+# INFO:
+RTMP_CONTROL_CHANNEL = 0x02
+
+# INFO:
 RTMP_COMMAND_CHANNEL = 0x03
 
-CONTROL_CHANNEL = 0x02
+# INFO:
+RTMP_CUSTOM_AUDIO_CHANNEL = 0x04
+
+# INFO:
+RTMP_CUSTOM_VIDEO_CHANNEL = 0x06
+
+# INFO:
+RTMP_STREAM_CHANNEL = 0x08
 
 # === Default acknowledgement limit types ===
 
+# INFO:
 HARD = 0
 
+# INFO:
 SOFT = 1
 
+# INFO:
 DYNAMIC = 2
 
 
