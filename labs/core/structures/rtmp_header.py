@@ -209,12 +209,84 @@ from rtmp.util import types
 log = logging.getLogger(__name__)
 
 
-# Record previous headers, for re-use when decoding packets, initialise the previous header.
-# recorded_headers = {'previous': None}
+# TODO: Make it more simpler to log and debug rtmp headers.
 
 
 class HeaderError(Exception):
     """ Raised if a header related operation failed. """
+
+
+class RtmpHeader(object):
+    """
+    The main class to handle RTMP header related events.
+    This will hold and be able to encode/decode the contextual information regarding a RTMP chunk stream, along
+    with the data's payload.
+    """
+
+    __slots__ = ('chunk_type', 'chunk_stream_id', 'timestamp',
+                 'body_length', 'data_type', 'stream_id', 'extended_timestamp',
+                 'timestamp_absolute', 'timestamp_delta')
+
+    def __init__(self, chunk_stream_id, timestamp=-1, body_length=-1, data_type=-1, stream_id=-1):
+        """
+
+        :param chunk_stream_id:
+        :param timestamp:
+        :param body_length:
+        :param data_type:
+        :param stream_id:
+        """
+        # TODO: Explicitly state the type of variable the header's attributes require when setting it,
+        #       this will prevent any other type of variable being initialised instead of what we need.
+        # NOTE: The header format (format) and the extended timestamp (extended_timestamp) ARE NOT to
+        #       be set manually or at your own accord.
+
+        # Header content:
+        # self.format = -1  # Non-manual - calculated.
+        self.chunk_type = -1  # Non-manual - calculated.
+
+        # TODO: Should we rename to chunk_stream_id or keep it as channel_id?
+        #       Might be worth renaming according to the specification.
+        # self.channel_id = int(channel_id)  # Manual entry.
+        self.chunk_stream_id = int(chunk_stream_id)  # Manual entry.
+
+        self.timestamp = int(timestamp)  # Manual entry.
+
+        self.body_length = int(body_length)  # Manual entry.
+
+        self.data_type = int(data_type)  # Manual entry.
+
+        self.stream_id = int(stream_id)  # Manual entry.
+
+        # This is only used if the timestamp is too large to fit in the original.
+        self.extended_timestamp = -1  # Non-manual - calculated.
+
+        # TODO: Should we have a descriptor for the type of timestamp e.g. absolute or delta?
+        # TODO: Added notice attribute to show if the timestamp received is an absolute.
+        self.timestamp_absolute = False  # Non-manual - monitored.
+
+        # TODO: Added notice attribute to show if the timestamp received is a delta.
+        self.timestamp_delta = False  # Non-manual - monitored.
+
+    # TODO: Make the code to represent the object more clear and concise.
+    def __repr__(self):
+        """
+        Return a string representation of the attributes of the header.
+        :return: str header attribute presentation.
+        """
+        attributes = []
+
+        for k in self.__slots__:
+            v = getattr(self, k, None)
+            if v is -1:
+                v = None
+            attributes.append('%s=%r' % (k, v))
+
+        return '<%s.%s %s at 0x%x>' % (
+            self.__class__.__module__,
+            self.__class__.__name__,
+            ' '.join(attributes),
+            id(self))
 
 
 class Header(object):
@@ -233,7 +305,6 @@ class Header(object):
         """
 
         :param chunk_stream_id:
-        :param timestamp:
         :param timestamp:
         :param body_length:
         :param data_type:
@@ -291,42 +362,283 @@ class Header(object):
             id(self))
 
 
-# def merge(old, new):
-#     """
-#     Merge the values of C{new} and C{old} together, returning the result.
-#     @type old: L{Header}
-#     @type new: L{Header}
-#     @rtype: L{Header}
-#     """
-#     if old.chunk_stream_id != new.chunk_stream_id:
-#         raise HeaderError('chunk_stream_id mismatch on merge old=%r, new=%r' % (
-#             old.chunk_stream_id, new.chunk_stream_id))
-#
-#     # what to do about full/continuation flags?
-#     merged = Header(new.chunk_stream_id)
-#
-#     if new.stream_id != -1:
-#         merged.stream_id = new.stream_id
-#     else:
-#         merged.stream_id = old.stream_id
-#
-#     if new.body_length != -1:
-#         merged.body_length = new.body_length
-#     else:
-#         merged.body_length = old.body_length
-#
-#     if new.data_type != -1:
-#         merged.data_type = new.data_type
-#     else:
-#         merged.data_type = old.data_type
-#
-#     if new.timestamp != -1:
-#         merged.timestamp = new.timestamp
-#     else:
-#         merged.timestamp = old.timestamp
-#
-#     return merged
+class HeaderHandler:
+    """ A class to handle header related events. """
 
+    def __init__(self, rtmp_stream):
+        """
+        Initialise the handler once with the working RTMP stream.
+
+        :param rtmp_stream: L{pyamf.util.BufferedByteStream} the stream to write the encoded header.
+        """
+        # @param header: The L{Header} to encode.
+        # @param previous: The previous header (if any).
+
+        # Initialise the stream in which we will be receiving headers.
+        self.working_stream = rtmp_stream
+
+        # Set up a previous packet to merge data from in the event of header
+        # attributes we do not have.
+        self.previous_header = RtmpHeader(-1)
+
+    # Header help methods:
+    # TODO: We can use this to get the rest of the values for a continuation header type.
+    # TODO: Is it possible to utilise this function to handle chunk_types?
+    @staticmethod
+    def get_merged(original, to_merge):
+        """
+        Merge the values of C{original} and C{to_merge}, returning the resulting header.
+
+        NOTE: Mainly for decoding.
+
+        This method is especially useful in the event we receive headers which are missing data that
+        is crucial to decode the header e.g. header type 3 where nothing is sent, we can return
+        the complete header by merging the values of the previous header and this new one.
+
+        NOTE: We cannot start to merge headers from different chunk streams.
+
+        :param original: L{Header}
+        :param to_merge: L{Header}
+        :return: L{Header}
+        """
+        if to_merge.chunk_stream_id != original.chunk_stream_id:
+            raise HeaderError('chunk_stream_id mismatch on the header to merge (merging=%r, merging with=%r)' %
+                              (to_merge.chunk_stream_id, original.chunk_stream_id))
+
+        merged_header = to_merge
+
+        # TODO: Should we limit this function from only being able to work when we have a complete original header?
+
+        # TODO: No need to create a new header object when we can just utilise the object we were given.
+        if merged_header.stream_id != -1:
+            merged_header.stream_id = original.stream_id
+
+        # else:
+        #     merged_header.stream_id = old.stream_id
+
+        if merged_header.data_type != -1:
+            merged_header.data_type = original.data_type
+
+        # else:
+        #     merged.data_type = old.data_type
+
+        if merged_header.timestamp != -1:
+            merged_header.timestamp = original.timestamp
+
+        # else:
+        #     merged.timestamp = old.timestamp
+
+        if merged_header.body_length != -1:
+            merged_header.body_length = merged_header.body_length
+
+        # else:
+        #     merged.body_length = old.body_length
+
+        return merged_header
+
+    @staticmethod
+    def get_size_mask(old_header, new_header):
+        """
+        Returns the number of bytes needed to encode the header based on the differences between the two.
+        NOTE: Both headers must be from the same chunk stream in order for this to work.
+
+        NOTE: Mainly for encoding.
+
+        NOTE: By comparing the size we need to encode the header, we can reduce overhead in packets by only
+              the necessary parts of the packet.
+
+        @type old_header: L{Header}
+        @type new_header: L{Header}
+        """
+        # TODO: Re-organise the logic of the branching in this function.
+
+        if old_header.chunk_stream_id != new_header.chunk_stream_id:
+            raise HeaderError('chunk_stream_id mismatch on size mask old_header=%r, new=%r' % (old_header, new_header))
+
+        if old_header is new_header:
+            return 0xc0  # type 3 encode - send continuation
+        else:
+            if old_header.stream_id != new_header.stream_id:
+                return 0  # type 0 encode - send full header
+            else:
+                if old_header.data_type == new_header.data_type and old_header.body_length == new_header.body_length:
+                    if old_header.timestamp == new_header.timestamp:
+                        return 0xc0  # type 3 encode
+                    else:
+                        return 0x80  # type 2 encode
+                else:
+                    return 0x40  # type 1 encode
+
+    def encode(self, header):
+        """
+        Encodes an RTMP header to C{stream}.
+
+        NOTE: We expect the stream to already be in network endian mode.
+        The chunk stream id can be encoded in up to 3 bytes. The first byte is special as
+        it contains the size of the rest of the header as described in L{getHeaderSize}.
+
+        0 >= chunk_stream_id > 64: chunk_stream_id
+        64 >= chunk_stream_id > 320: 0 chunk_stream_id - 64
+        320 >= chunk_stream_id > 0xffff + 64: 1, chunk_stream_id - 64 (written as 2 byte int)
+
+        Chunk Stream type: | Mask type:
+        ------------------   ----------
+               0           =    0x00
+               1           =    0x40
+               2           =    0x80
+               3           =    0xc0
+
+        NOTE: We keep on altering the value of the header's format until we recognise
+              which header format it truly is.
+
+        NOTE: When we use the previous header from the previous parameter, this is only to be used to
+              to compare messages in which it's body has been split into chunks.
+
+        @param stream: The stream to write the encoded header.
+        @type stream: L{util.BufferedByteStream}.
+        @param header: The L{Header} to encode.
+        @param previous: The previous header (if any).
+        """
+        # TODO: Implement the use of previous headers here.
+        if previous is None:
+            mask = 0
+        else:
+            # TODO: Get mask procedure name.
+            # TODO: We could use a continuation field here.
+            # TODO: 'read_format' to 'mask' or 'header_mask'.
+            mask = get_size_mask(previous, header)
+
+        # Retrieve the channel id from the header's chunk_stream_id attribute.
+        chunk_stream_id = header.chunk_stream_id
+
+        # print('Previous header: %r HEADER TYPE: %s CHANNEL ID: %s' % (previous, mask, chunk_stream_id))
+
+        if chunk_stream_id < 64:  # <= 63
+            stream.write_uchar(mask | chunk_stream_id)
+        elif chunk_stream_id < 320:  # <=319
+            stream.write_uchar(mask)
+            stream.write_uchar(chunk_stream_id - 64)
+        else:
+            chunk_stream_id -= 64
+
+            stream.write_uchar(mask + 1)
+            stream.write_uchar(chunk_stream_id & 0xff)
+            stream.write_uchar(chunk_stream_id >> 0x08)
+
+        # TODO: We should not be encoding depending on sections, we need to decode based on format - branching.
+        # This is a Type 3 (0xC0) header, we do not need to write the stream id, message size or
+        # timestamp delta since they are not present in this type of message.
+        if mask == 0xc0:
+            # TODO: Added format information in rtmp_header.encode.
+            # Set header format to Type 3
+            header.chunk_type = types.TYPE_3_CONTINUATION
+        else:
+            # This applies to all header which is Type 2 (0x80) or smaller.
+            # Write the timestamp, if it fits, elsewhere state we need an extended timestamp and write it later.
+            # if mask <= 0x80:
+
+            if mask == 0x80:
+                # We only need to write the timestamp delta for this type of header.
+
+                # Write the timestamp delta.
+                # NOTE: If the timestamp delta is greater than or equal to the value 16777215,
+                #       then we need to extend the timestamp with another field at the end of the header.
+                if header.timestamp >= 0xffffff:
+                    stream.write_24bit_uint(0xffffff)
+                else:
+                    # Otherwise write the timestamp delta.
+                    stream.write_24bit_uint(header.timestamp)
+
+                # Set to state that we sent a timestamp delta,
+                header.timestamp_delta = True
+
+                # TODO: Added format information in rtmp_header.encode.
+                # Set header format to Type 2.
+                header.chunk_type = types.TYPE_2_SAME_LENGTH_AND_STREAM
+
+            # This applies to headers which are Type 1 (0x40) or smaller.
+            # Write message length, followed by the message type id.
+            # if mask <= 0x40:
+
+            elif mask == 0x40:
+                # We will need to write the timestamp delta, body length and data type
+                # for this type of header.
+
+                # Write the timestamp delta.
+                # NOTE: See above branch for mask type 0x80.
+                if header.timestamp >= 0xffffff:
+                    stream.write_24bit_uint(0xffffff)
+                else:
+                    # Otherwise write the timestamp delta.
+                    stream.write_24bit_uint(header.timestamp)
+
+                # Write the body length.
+                stream.write_24bit_uint(header.body_length)  # message length
+
+                # Write the data type.
+                stream.write_uchar(header.data_type)  # message type id
+
+                # Set to state that we are sending a timestamp delta.
+                header.timestamp_delta = True
+
+                # TODO: Added format information in rtmp_header.encode.
+                # Set header format to Type 1.
+                header.chunk_type = types.TYPE_1_SAME_STREAM
+
+            # This applies if the format is Type 0 (0x00).
+            # Write the stream id.
+            # if mask is 0x00:
+
+            elif mask == 0x00:
+                # We will need to write an absolute timestamp, body length, data type
+                # and stream id for this type of packet.
+
+                # Write the absolute timestamp.
+                # NOTE: See above branch for mask type 0x80.
+                if header.timestamp >= 0xffffff:
+                    stream.write_24bit_uint(0xffffff)
+                else:
+                    # Otherwise write the timestamp delta.
+                    stream.write_24bit_uint(header.timestamp)
+
+                # Write the body length.
+                stream.write_24bit_uint(header.body_length)  # message length
+
+                # Write the data type.
+                stream.write_uchar(header.data_type)  # message type id
+
+                # Write the stream id.
+                stream.endian = '<'
+                stream.write_ulong(header.stream_id)
+                stream.endian = '!'
+
+                # Set to state that we are sending an absolute timestamp.
+                header.timestamp_absolute = True
+
+                # TODO: Added format information in rtmp_header.encode.
+                # Set header format to Type 0.
+                header.chunk_type = types.TYPE_0_FULL
+
+            # If the timestamp (absolute or delta) we wrote was greater than or equal to the value 16777215,
+            # then we need to write it's true value in this extended timestamp field.
+            # This is only applicable to types 0, 1 or 2 (not 3 as it does not feature a timestamp).
+            # if mask <= 0x80:
+
+            if header.timestamp >= 0xffffff:
+                # Write the extended timestamp.
+                stream.write_ulong(header.timestamp)
+
+                # TODO: Should the extended timestamp be a boolean value?
+                header.extended_timestamp = header.timestamp
+            else:
+                header.extended_timestamp = None
+
+                # log.info('Header encoded: %s' % header)
+                # TODO: Verify at encode_header end-point that a True was returned from encoding the header.
+                # print('Header encoded: %s' % repr(header))
+
+
+# TODO: This should be based on each header we decode. We need to create encoding rules as well.
 # TODO: This does not function to it's full - it just keep on returning 0xc0 due to the same header being re-used.
 # TODO: We need to make this work on a packet basis as well.
 def get_size_mask(old_header, new_header):
@@ -341,7 +653,6 @@ def get_size_mask(old_header, new_header):
     @type new_header: L{Header}
     """
     # TODO: Re-organise the logic of the branching in this function.
-
     # If the header we just received and the header previous to it is identical,
     # then it is an RTMP message in chunks.
     # Return that size corresponds to a type 3 header.
@@ -379,10 +690,10 @@ def get_size_mask(old_header, new_header):
 # TODO: Can we not connect this up to the Header class?
 def encode(stream, header, previous=None):
     """
-    Encodes a RTMP header to C{stream}.
+    Encodes an RTMP header to C{stream}.
 
     NOTE: We expect the stream to already be in network endian mode.
-    The channel id can be encoded in up to 3 bytes. The first byte is special as
+    The chunk stream id can be encoded in up to 3 bytes. The first byte is special as
     it contains the size of the rest of the header as described in L{getHeaderSize}.
 
     0 >= chunk_stream_id > 64: chunk_stream_id
@@ -546,6 +857,7 @@ def encode(stream, header, previous=None):
     # print('Header encoded: %s' % repr(header))
 
 
+# TODO: Read issue where some packets are missing - this maybe due to a format of 3 (type 3) header arrival.
 # TODO: Can we not connect this up to the Header class?
 def decode(stream):
     """
@@ -649,7 +961,8 @@ def decode(stream):
 
     if header.chunk_type == types.TYPE_3_CONTINUATION:
         # No header data present, it is a continuation of the same data from the preceding chunks.
-        # TODO: Maybe return the previously recorded headers?
+        # TODO: Return the previously recorded headers, otherwise the read loop in RtmpReader will continue looping as
+        #       we do not know the message body size to expect.
         return header
 
     else:

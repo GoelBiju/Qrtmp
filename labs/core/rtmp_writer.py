@@ -6,9 +6,8 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from rtmp.core import rtmp_header
-from rtmp.core.packet import RtmpPacket
-
+from rtmp.core.structures import rtmp_header
+from rtmp.core.structures import packet
 from rtmp.util import types
 
 log = logging.getLogger(__name__)
@@ -46,18 +45,18 @@ class RtmpWriter:
     @staticmethod
     def new_packet():
         """ A connective method to return an invalid and empty RtmpPacket. """
-        return RtmpPacket()
+        return packet.RtmpPacket()
 
     # def get_working_channel(self):
     #     """
     #
-    #     @return:
+    #     :return:
     #     """
 
     # def get_working_stream(self):
     #     """
     #
-    #     @return:
+    #     :return:
     #     """
 
     # TODO: Maybe 'setup_packet' could be a function of the RtmpPacket class - '.setup()'.
@@ -322,6 +321,9 @@ class RtmpWriter:
             if type(command_object) is list:
                 for command_info in command_object:
                     encoder.writeElement(command_info)
+            else:
+                # TODO: Allow types which are not iterable to be written on it's own into the stream.
+                encoder.writeElement(command_object)
 
             options = write_packet.body['options']
             if type(options) is list:

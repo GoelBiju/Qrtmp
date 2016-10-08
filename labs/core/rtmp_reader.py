@@ -11,15 +11,13 @@ RTMP Specification V1.0: http://wwwimages.adobe.com/content/dam/Adobe/en/devnet/
 
 import logging
 
-# TODO: Possibly only import pyamf?
 import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
+from rtmp.core.structures import rtmp_header
+from rtmp.core.structures import packet
 from rtmp.util import types
-
-from rtmp.core import rtmp_header
-from rtmp.core.packet import RtmpPacket
 
 
 log = logging.getLogger(__name__)
@@ -41,6 +39,7 @@ class RtmpReader:
     def __iter__(self):
         return self
 
+    # TODO: Not properly decoding headers may result in the loop decoding here until a restart.
     # TODO: Read packet and the actual decoding of the packet should be in two different sections.
     def read_packet(self):
         """
@@ -49,11 +48,11 @@ class RtmpReader:
         """
         if not self.stream.at_eof():
             decoded_header, decoded_body = self.decode_stream()
-            # print('Decoding next header and body.')
+            # print('Decoding next header and body ...')
             # print(decoded_header, decoded_body)
-            # print('Generating next RtmpPacket.')
+            # print('Generating next RtmpPacket ....')
             rtmp_packet = self.generate_packet(decoded_header, decoded_body)
-            # print(rtmp_packet)
+            print(rtmp_packet)
             return rtmp_packet
         else:
             # TODO: Is this the right raise error to call?
@@ -66,16 +65,22 @@ class RtmpReader:
         """
         # TODO: Simplify (if we can) the header decode and read process.
         # The message may span a number of chunks (each one with its own header).
-        message_body = []
+        # message_body = []
         msg_body_len = 0
 
         decoded_header = rtmp_header.decode(self.stream)
+        decoded_body = pyamf.util.BufferedByteStream('')
+
         log.debug('read_packet() header %s' % decoded_header)
+        # print('Decoded header: %s' % decoded_header)
 
         # TODO: Work out how the 'previous_header' really functions.
-        if decoded_header.data_type == -1:
-            header = self.previous_header
+        # if decoded_header.data_type == -1:
+        #     decoded_header = self.previous_header
 
+        # TODO: Temporary fix to the body length being -1 due to a CONTINUATION header type 3 being received.
+        if (decoded_header.data_type is -1) or (decoded_header.body_length is -1):
+            decoded_header = self.previous_header
         self.previous_header = decoded_header
 
         # Loop and read the content of the message until we exceed or equal the expected message body size.
@@ -86,7 +91,10 @@ class RtmpReader:
             read_bytes = min(decoded_header.body_length - msg_body_len, self.chunk_size)
 
             # Compare the message body length with the bytes read.
-            message_body.append(self.stream.read(read_bytes))
+            # message_body.append(self.stream.read(read_bytes))
+            # TODO: Removed the use of the list, we can use the append function in pyamf BufferedByteStream.
+            decoded_body.append(self.stream.read(read_bytes))
+
             msg_body_len += read_bytes
             if msg_body_len >= decoded_header.body_length:
                 break
@@ -102,15 +110,15 @@ class RtmpReader:
                 self.stream.read_ulong()
 
             # TODO: Assertion tests to see if the next header we get is generated with the constant -1 (default) values.
-            assert next_header.timestamp == -1, (header, next_header)
-            assert next_header.body_length == -1, (header, next_header)
-            assert next_header.data_type == -1, (header, next_header)
-            assert next_header.stream_id == -1, (header, next_header)
+            assert next_header.timestamp == -1, (rtmp_header, next_header)
+            assert next_header.body_length == -1, (rtmp_header, next_header)
+            assert next_header.data_type == -1, (rtmp_header, next_header)
+            assert next_header.stream_id == -1, (rtmp_header, next_header)
 
         # Make sure the body length we read is equal to the expected body length from the RTMP header.
-        assert decoded_header.body_length == msg_body_len, (header, msg_body_len)
+        assert decoded_header.body_length == msg_body_len, (rtmp_header, msg_body_len)
 
-        decoded_body = pyamf.util.BufferedByteStream(''.join(message_body))
+        # decoded_body = pyamf.util.BufferedByteStream(''.join(message_body))
 
         return decoded_header, decoded_body
 
@@ -125,7 +133,7 @@ class RtmpReader:
         # Decode the message based on the datatype present in the header.
         # Initialise an RTMP packet instance, to store the information we received,
         # by providing the header.
-        received_packet = RtmpPacket(decoded_header)
+        received_packet = packet.RtmpPacket(decoded_header)
 
         # Given the header message type id (data_type), let us decode the message body appropriately.
         # TODO: Re-organise these branches to match that of the RtmpWriters.
@@ -284,6 +292,8 @@ class RtmpReader:
             # We can keep on trying to decode an element in the byte content,
             # until the position of the indicator is at the end of the stream of data.
             # commands.append()
+
+            # TODO: Is it possible to iterate over the command object, check if it is null first?
 
             # command_message['command_object'] = None
 

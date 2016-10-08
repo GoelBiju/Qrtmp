@@ -1,8 +1,14 @@
-""" Classes relevant to the basic RTMP packet structure; the packet header and body. """
+"""
+Classes relevant to the basic RTMP packet structure; the packet header and body.
+
+Information:
+
+"""
 
 import time
 
-from rtmp.core import rtmp_header
+from rtmp.core.structures import rtmp_header
+
 # from rtmp.util import types
 
 # The handshake length.
@@ -69,7 +75,7 @@ class RtmpPacket(object):
     body_is_amf = None
     body_is_so = None
 
-    def __init__(self, header=None, body=None):
+    def __init__(self, set_header=None, set_body=None):
         """
         Initialise the packet by providing the header information and body data.
         NOTE: The packet can be initialised without providing a header or a body, however, in order to use this packet,
@@ -80,30 +86,30 @@ class RtmpPacket(object):
 
               In this case, you MUST NOT use the packet for encoding/decoding to/from the RTMP stream.
 
-        :param header: L{Header} header with the appropriate values.
-        :param body: dict the body of the rtmp packet, with each key being a section of the RTMP packet.
+        :param set_header: L{Header} header with the appropriate values.
+        :param set_body: dict the body of the rtmp packet, with each key being a section of the RTMP packet.
         """
+        # TODO: Formatting of names: _chunk_type, _extended_timestamp, _timestamp_absolute or _timestamp_delta?
         # Handle the packet header.
-        if header is not None:
-            # self.header.format = header.format
-            self.header.chunk_type = header.chunk_type  # _chunk_type?
-            self.header.chunk_stream_id = header.chunk_stream_id
+        if set_header is not None:
+            self.header.chunk_type = set_header.chunk_type
+            self.header.chunk_stream_id = set_header.chunk_stream_id
 
-            self.header.timestamp = header.timestamp
-            self.header.body_length = header.body_length
-            self.header.data_type = header.data_type
-            self.header.stream_id = header.stream_id
-            self.header.extended_timestamp = header.extended_timestamp  # _extended_timestamp?
+            self.header.timestamp = set_header.timestamp
+            self.header.body_length = set_header.body_length
+            self.header.data_type = set_header.data_type
+            self.header.stream_id = set_header.stream_id
+            self.header.extended_timestamp = set_header.extended_timestamp
 
-            self.timestamp_absolute = header.timestamp_absolute  # _timestamp_absolute?
-            self.timestamp_delta = header.timestamp_delta  # _timestamp_delta?
+            self.timestamp_absolute = set_header.timestamp_absolute
+            self.timestamp_delta = set_header.timestamp_delta
 
         # Handle the packet body.
-        if body is not None:
-            self.body = body
+        if set_body is not None:
+            self.body = set_body
 
-        # TODO: Add convenience methods to get the fixed parts of the AMF body (only applicable to command messages
-        #       for now).
+        # TODO: Add convenience methods to get the fixed parts of the AMF body
+        #       (only applicable to command messages for now).
         # TODO: Possibly have an AMF body format attributes (.body_amf/.is_amf?)
         #       if the message received was a command (RPC).
         # Allow the recognition as whether the encoded/decoded was/is AMF (plainly or from a Shared Object).
@@ -113,6 +119,7 @@ class RtmpPacket(object):
 
     # TODO: A 'get_type' method should also be added.
     # TODO: Abstract all the essential header variables that we can set e.g. data (message) type, body.
+    # Generation convenience methods.
     def set_type(self, data_type):
         """
         A convenience method to allow the message data type to be set without having to
@@ -140,14 +147,54 @@ class RtmpPacket(object):
         if self.header.timestamp is -1:
             self.header.timestamp = 0
 
-        # If the stream id has still not been established by this point, we will set it to be sent
-        # on the RTMP connection channel.
-        # if self.header.stream_id is -1:
-        #     self.header.stream_id = types.RTMP_CONNECTION_CHANNEL
-
         if self.body is not None:
             self.header.body_length = len(self.body)
 
+    def get_command_name(self):
+        """
+        Returns the command name received from the server if the message was a COMMAND
+        data-type and the body was AMF formatted.
+        :return: str the command name from the COMMAND response or None if it's not present.
+        """
+        if self.body_is_amf and 'command_name' in self.body:
+            return self.body['command_name']
+        else:
+            return None
+
+    def get_transaction_id(self):
+        """
+        Returns the transaction id received from the server if the message was a COMMAND
+        data-type and the body was AMF formatted.
+        :return: int the transaction id of the message or None if it's not present.
+        """
+        if self.body_is_amf and 'transaction_id' in self.body:
+            return int(self.body['transaction_id'])
+        else:
+            return None
+
+    def get_command_object(self):
+        """
+        Returns the command object received from the server if the message was a COMMAND
+        data-type and the body was AMF formatted.
+        :return: list the command object retrieved from the message or None if it's not present.
+        """
+        if self.body_is_amf and 'command_object' in self.body:
+            return self.body['command_object']
+        else:
+            return None
+
+    def get_response(self):
+        """
+        Returns the response received from the server if the message was a COMMAND
+        data-type and the body was AMF formatted.
+        :return: list the response parsed from the AMF-encoded message or None if it's not present.
+        """
+        if self.body_is_amf and 'response' in self.body:
+            return self.body['response']
+        else:
+            return None
+
+    # Handler convenience methods.
     def free_body(self):
         """ 'Free' (clear) the body content of the packet. """
         self.body = None
