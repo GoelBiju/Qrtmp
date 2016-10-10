@@ -15,9 +15,9 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from rtmp.core.structures import rtmp_header
-from rtmp.core.structures import packet
-from rtmp.util import types
+from qrtmp.core.structures import rtmp_header
+from qrtmp.core.structures import packet
+from qrtmp.util import types
 
 
 log = logging.getLogger(__name__)
@@ -166,32 +166,46 @@ class RtmpReader:
                 'event_data': decoded_body.read()
             }
 
-        elif received_packet.header.data_type == types.DT_WINDOW_ACK_SIZE:
+        elif received_packet.header.data_type == types.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
 
             received_packet.body = {
-                'window_ack_size': decoded_body.read_ulong()
+                'window_acknowledgement_size': decoded_body.read_ulong()
             }
 
         elif received_packet.header.data_type == types.DT_SET_PEER_BANDWIDTH:
 
             received_packet.body = {
-                'window_ack_size': decoded_body.read_ulong(),
+                'window_acknowledgement_size': decoded_body.read_ulong(),
                 'limit_type': decoded_body.read_uchar()
             }
 
         elif received_packet.header.data_type == types.DT_AUDIO_MESSAGE:
 
             received_packet.body = {
-                'control': decoded_body.read_uchar(),
-                'audio_data': decoded_body.read()
+                'control': None,
+                'audio_data': None
             }
+            # received_packet.body = decoded_body.read()
+            # if len(decoded_body) is not 0:
+
+            # print(len(decoded_body))
+
+            # TODO: Handle in the event that there is no RTMP body in the message.
+            if len(decoded_body) is not 0:
+                received_packet.body['control'] = decoded_body.read_uchar()
+                received_packet.body['audio_data'] = decoded_body.read()
 
         elif received_packet.header.data_type == types.DT_VIDEO_MESSAGE:
 
             received_packet.body = {
-                'control': decoded_body.read_uchar(),
-                'video_data': decoded_body.read()
+                'control': None,
+                'video_data': None
             }
+
+            # TODO: Handle in the event that there is no RTMP body in the message.
+            if len(decoded_body) is not 0:
+                received_packet.body['control'] = decoded_body.read_uchar()
+                received_packet.body['video_data'] = decoded_body.read()
 
         elif received_packet.header.data_type == types.DT_AMF3_SHARED_OBJECT:
 
@@ -221,7 +235,7 @@ class RtmpReader:
 
             decoder = pyamf.amf3.Decoder(decoded_body)
             # commands = []
-            command_message = {
+            received_packet.body = {
                 'command_name': decoder.readElement(),
                 'transaction_id': decoder.readElement(),
                 'response': []
@@ -238,22 +252,28 @@ class RtmpReader:
             # command_message['command_object'] = None
             while not decoded_body.at_eof():
                 # commands.append(decoder.readElement())
-                command_message['response'].append(decoder.readElement())
+                # command_message['response'].append(decoder.readElement())
+                received_packet.body['response'].append(decoder.readElement())
 
             # received_packet.body = {
             #     'command': commands
             # }
 
-            received_packet.body = command_message
+            # received_packet.body = command_message
 
             # The body we decoded was AMF formatted.
             received_packet.body_is_amf = True
 
         elif received_packet.header.data_type == types.DT_DATA_MESSAGE:
 
+            decoder = pyamf.amf0.Decoder(decoded_body)
             received_packet.body = {
-                'metadata': decoded_body
+                'data_name': decoder.readElement(),
+                'data_content': []
             }
+
+            while not decoded_body.at_eof():
+                received_packet.body['data_content'].append(decoder.readElement())
 
         elif received_packet.header.data_type == types.DT_SHARED_OBJECT:
 
@@ -284,6 +304,7 @@ class RtmpReader:
             command_message = {
                 'command_name': decoder.readElement(),
                 'transaction_id': decoder.readElement(),
+                # TODO: Would we ever need to iterate here over the command_object, or is it only one object?
                 'command_object': decoder.readElement(),
                 'response': []
             }
@@ -292,10 +313,6 @@ class RtmpReader:
             # We can keep on trying to decode an element in the byte content,
             # until the position of the indicator is at the end of the stream of data.
             # commands.append()
-
-            # TODO: Is it possible to iterate over the command object, check if it is null first?
-
-            # command_message['command_object'] = None
 
             while not decoded_body.at_eof():
                 # commands.append(decoder.readElement())

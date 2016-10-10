@@ -194,7 +194,7 @@ Take away the latest from the earlier and times the answer by 1000 to return our
 
 import logging
 
-from rtmp.util import types
+from qrtmp.util import types
 
 # TODO: RECORD HEADER:
 #       Possibly remove use of dictionary and since this will increase memory size, since we only
@@ -369,16 +369,12 @@ class HeaderHandler:
         """
         Initialise the handler once with the working RTMP stream.
 
-        :param rtmp_stream: L{pyamf.util.BufferedByteStream} the stream to write the encoded header.
+        :param rtmp_stream: L{pyamf.util.BufferedByteStream} the stream to read or write headers.
         """
-        # @param header: The L{Header} to encode.
-        # @param previous: The previous header (if any).
-
         # Initialise the stream in which we will be receiving headers.
         self.working_stream = rtmp_stream
 
-        # Set up a previous packet to merge data from in the event of header
-        # attributes we do not have.
+        # Set up a previous packet to merge data from in the event of header attributes we do not have.
         self.previous_header = RtmpHeader(-1)
 
     # Header help methods:
@@ -397,9 +393,9 @@ class HeaderHandler:
 
         NOTE: We cannot start to merge headers from different chunk streams.
 
-        :param original: L{Header}
-        :param to_merge: L{Header}
-        :return: L{Header}
+        :param original: L{RtmpHeader}
+        :param to_merge: L{RtmpHeader}
+        :return: L{RtmpHeader}
         """
         if to_merge.chunk_stream_id != original.chunk_stream_id:
             raise HeaderError('chunk_stream_id mismatch on the header to merge (merging=%r, merging with=%r)' %
@@ -447,8 +443,8 @@ class HeaderHandler:
         NOTE: By comparing the size we need to encode the header, we can reduce overhead in packets by only
               the necessary parts of the packet.
 
-        @type old_header: L{Header}
-        @type new_header: L{Header}
+        :param old_header: L{RtmpHeader}
+        :param new_header: L{RtmpHeader}
         """
         # TODO: Re-organise the logic of the branching in this function.
 
@@ -469,7 +465,7 @@ class HeaderHandler:
                 else:
                     return 0x40  # type 1 encode
 
-    def encode(self, header):
+    def encode_to_stream(self, header):
         """
         Encodes an RTMP header to C{stream}.
 
@@ -494,19 +490,21 @@ class HeaderHandler:
         NOTE: When we use the previous header from the previous parameter, this is only to be used to
               to compare messages in which it's body has been split into chunks.
 
-        @param stream: The stream to write the encoded header.
-        @type stream: L{util.BufferedByteStream}.
-        @param header: The L{Header} to encode.
-        @param previous: The previous header (if any).
+        :param header: The L{RtmpHeader} to encode.
         """
+
+        # @param stream: The stream to write the encoded header.
+        # @type stream: L{util.BufferedByteStream}.
+        # @param previous: The previous header (if any).
+
         # TODO: Implement the use of previous headers here.
-        if previous is None:
+        if self.previous_header is None:
             mask = 0
         else:
             # TODO: Get mask procedure name.
             # TODO: We could use a continuation field here.
             # TODO: 'read_format' to 'mask' or 'header_mask'.
-            mask = get_size_mask(previous, header)
+            mask = get_size_mask(self.previous_header, header)
 
         # Retrieve the channel id from the header's chunk_stream_id attribute.
         chunk_stream_id = header.chunk_stream_id
@@ -514,16 +512,16 @@ class HeaderHandler:
         # print('Previous header: %r HEADER TYPE: %s CHANNEL ID: %s' % (previous, mask, chunk_stream_id))
 
         if chunk_stream_id < 64:  # <= 63
-            stream.write_uchar(mask | chunk_stream_id)
+            self.working_stream.write_uchar(mask | chunk_stream_id)
         elif chunk_stream_id < 320:  # <=319
-            stream.write_uchar(mask)
-            stream.write_uchar(chunk_stream_id - 64)
+            self.working_stream.write_uchar(mask)
+            self.working_stream.write_uchar(chunk_stream_id - 64)
         else:
             chunk_stream_id -= 64
 
-            stream.write_uchar(mask + 1)
-            stream.write_uchar(chunk_stream_id & 0xff)
-            stream.write_uchar(chunk_stream_id >> 0x08)
+            self.working_stream.write_uchar(mask + 1)
+            self.working_stream.write_uchar(chunk_stream_id & 0xff)
+            self.working_stream.write_uchar(chunk_stream_id >> 0x08)
 
         # TODO: We should not be encoding depending on sections, we need to decode based on format - branching.
         # This is a Type 3 (0xC0) header, we do not need to write the stream id, message size or
@@ -544,10 +542,10 @@ class HeaderHandler:
                 # NOTE: If the timestamp delta is greater than or equal to the value 16777215,
                 #       then we need to extend the timestamp with another field at the end of the header.
                 if header.timestamp >= 0xffffff:
-                    stream.write_24bit_uint(0xffffff)
+                    self.working_stream.write_24bit_uint(0xffffff)
                 else:
                     # Otherwise write the timestamp delta.
-                    stream.write_24bit_uint(header.timestamp)
+                    self.working_stream.write_24bit_uint(header.timestamp)
 
                 # Set to state that we sent a timestamp delta,
                 header.timestamp_delta = True
@@ -567,16 +565,16 @@ class HeaderHandler:
                 # Write the timestamp delta.
                 # NOTE: See above branch for mask type 0x80.
                 if header.timestamp >= 0xffffff:
-                    stream.write_24bit_uint(0xffffff)
+                    self.working_stream.write_24bit_uint(0xffffff)
                 else:
                     # Otherwise write the timestamp delta.
-                    stream.write_24bit_uint(header.timestamp)
+                    self.working_stream.write_24bit_uint(header.timestamp)
 
                 # Write the body length.
-                stream.write_24bit_uint(header.body_length)  # message length
+                self.working_stream.write_24bit_uint(header.body_length)  # message length
 
                 # Write the data type.
-                stream.write_uchar(header.data_type)  # message type id
+                self.working_stream.write_uchar(header.data_type)  # message type id
 
                 # Set to state that we are sending a timestamp delta.
                 header.timestamp_delta = True
@@ -596,21 +594,21 @@ class HeaderHandler:
                 # Write the absolute timestamp.
                 # NOTE: See above branch for mask type 0x80.
                 if header.timestamp >= 0xffffff:
-                    stream.write_24bit_uint(0xffffff)
+                    self.working_stream.write_24bit_uint(0xffffff)
                 else:
                     # Otherwise write the timestamp delta.
-                    stream.write_24bit_uint(header.timestamp)
+                    self.working_stream.write_24bit_uint(header.timestamp)
 
                 # Write the body length.
-                stream.write_24bit_uint(header.body_length)  # message length
+                self.working_stream.write_24bit_uint(header.body_length)  # message length
 
                 # Write the data type.
-                stream.write_uchar(header.data_type)  # message type id
+                self.working_stream.write_uchar(header.data_type)  # message type id
 
                 # Write the stream id.
-                stream.endian = '<'
-                stream.write_ulong(header.stream_id)
-                stream.endian = '!'
+                self.working_stream.endian = '<'
+                self.working_stream.write_ulong(header.stream_id)
+                self.working_stream.endian = '!'
 
                 # Set to state that we are sending an absolute timestamp.
                 header.timestamp_absolute = True
@@ -626,7 +624,7 @@ class HeaderHandler:
 
             if header.timestamp >= 0xffffff:
                 # Write the extended timestamp.
-                stream.write_ulong(header.timestamp)
+                self.working_stream.write_ulong(header.timestamp)
 
                 # TODO: Should the extended timestamp be a boolean value?
                 header.extended_timestamp = header.timestamp

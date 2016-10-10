@@ -1,6 +1,6 @@
 """
 Qrtmp Library
-Version: 0.1.0
+Version: 0.0.3
 """
 
 import logging
@@ -19,6 +19,7 @@ from util import types
 
 log = logging.getLogger(__name__)
 
+# TODO: Logging with string formatting of RtmpPackets (__repr__) does not work.
 # TODO: Speed enhancement when connecting to an RTMP server.
 # TODO: Allow us to get the transaction id from the RtmpClient, and then process messages (wait for reply) according to
 #       the transaction id.
@@ -55,15 +56,15 @@ class RtmpClient:
     # TODO: Ability to setup an option after initialisation - maybe convenience methods for all (otherwise datatype
     #       issue when coercing a NoneType to unicode?
     # TODO: Use kwargs here instead.
-    def __init__(self, ip, port, proxy=None, **kwargs):
+    def __init__(self, ip, port=1935, proxy=None, **kwargs):
         """
         Initialise a new RTMP client connection object using the parameters that have been provided.
 
-        :param ip:
-        :param port:
-        :param proxy:
+        :param ip: str the I.P. address to connect to the server with.
+        :param port: (default 1935)
+        :param proxy: (default None)
 
-        :param **kwargs: other arguments available:
+        :param **kwargs: arguments available:
                 - kwarg app:
                 - kwarg swf_url:
                 - kwarg tc_url:
@@ -83,14 +84,16 @@ class RtmpClient:
 
         #   - other connection parameters:
         # NOTE: The following should not be changed once initialised (datatype errors may occur otherwise).
+        # TODO: Raise some warnings in the event that the key arguments are their defaults to make the user
+        #       aware that they are connecting 'plainly'.
         self._app = kwargs.get('app', u'None')
         self._swf_url = kwargs.get('swf_url', u'None')
         self._tc_url = kwargs.get('tc_url', u'None')
         self._page_url = kwargs.get('page_url', u'None')
-        self._flash_ver = kwargs.get('flash_ver', u'None')
         self._fpad = kwargs.get('fpad', u'False')
 
         # NOTE: These can be freely changed before calling connect().
+        self.flash_ver = kwargs.get('flash_ver', u'None')
         self.capabilities = kwargs.get('capabilities', 239)
         self.audio_codecs = kwargs.get('audio_codecs', 3575)  # 3575
         self.video_codecs = kwargs.get('video_codecs', 252)  # 252
@@ -139,11 +142,18 @@ class RtmpClient:
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        # Initialise basic socket and stream to record the data we receive.
+        # Initialise basic socket and stream file-object to record the data we receive.
         self.socket.connect((self._ip, self._port))
+
+        # TODO: Make file object optional and by default read from the socket and use the
+        #       buffered byte stream (this inherits the functions from the StringIOProxy & FileDataTypeMixIn).
         self.file = self.socket.makefile()
         self.stream = FileDataTypeMixIn(self.file)
 
+        # Initialise empty buffered byte stream.
+        # self.stream = pyamf.util.BufferedByteStream('')
+
+        # TODO: Figure out a way of reading/writing data from the socket and appending that into the stream object.
         # Perform the handshake with the server.
         self.handshake()
 
@@ -159,6 +169,13 @@ class RtmpClient:
         # Set that we have a valid connection after sending the connection packet.
         self.valid_connection = True
 
+        # TODO: Test reading data out manually.
+        # while True:
+        #     data = self.socket.recv(self.reader.chunk_size)
+        #     print(data)
+
+        # TODO: Need a status handler, this should only be true and returned after
+        #       receiving NetConnection.Connection.Sucess with the status or False with the status.
         return self.valid_connection
 
     def set_socket_options(self):
@@ -243,7 +260,7 @@ class RtmpClient:
         # Format: 0
         # Channel ID: 3
         # Timestamp: 0
-        # Body size ~ variable size
+        # Body size ~ variable size depending on connection body
         # Type ID: 20
         # Stream ID: 0
 
@@ -251,40 +268,38 @@ class RtmpClient:
         connection_packet = packet.RtmpPacket()
 
         # Set up the connection packet's header:
-        # connection_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL  # Already set in write().
+        #   - initial connection timestamp is set to zero:
         connection_packet.header.timestamp = 0
+        #   - this is an AMF0 COMMAND message:
         connection_packet.header.data_type = types.DT_COMMAND
+        #   - the connection packet is always sent on the NetConnection stream - Stream Id 0:
         connection_packet.header.stream_id = 0
 
         # TODO: Why are we not using the call function here? RtmpWriter is expecting another format.
         # TODO: The transaction id here as '1' could be set as a class variable which can be set from the
         #       outside as well on RPC commands.
         # TODO: We need to use the command object here, however not anywhere else (should we just merge it?)
-        connection_packet.body = {
-            'command_name': u'connect',
-            'transaction_id': self._transaction_id + 1,
-            'command_object': [
-                {
-                    'app': self._app,  # u'' + self.app
-                    'flashVer': self._flash_ver,  # u'' + self.flash_ver
-                    'swfUrl': self._swf_url,  # u'' + self.swf_url
-                    'tcUrl': self._tc_url,  # u'' + self.tc_url
-                    'fpad': self._fpad,
-                    'capabilities': self.capabilities,
-                    'audioCodecs': self.audio_codecs,
-                    'videoCodecs': self.video_codecs,
-                    'videoFunction': self.video_function,
-                    'pageUrl': self._page_url,  # u'' + self.page_url
-                    'objectEncoding': self.object_encoding
-                }
-            ]
-        }
+        connection_packet.body = {'command_name': u'connect', 'transaction_id': self._transaction_id + 1,
+                                  'command_object': [
+                                      {
+                                          'app': self._app,  # u'' + self.app
+                                          'flashVer': self.flash_ver,  # u'' + self.flash_ver
+                                          'swfUrl': self._swf_url,  # u'' + self.swf_url
+                                          'tcUrl': self._tc_url,  # u'' + self.tc_url
+                                          'fpad': self._fpad,
+                                          'capabilities': self.capabilities,
+                                          'audioCodecs': self.audio_codecs,
+                                          'videoCodecs': self.video_codecs,
+                                          'videoFunction': self.video_function,
+                                          'pageUrl': self._page_url,  # u'' + self.page_url
+                                          'objectEncoding': self.object_encoding
+                                      }
+                                  ], 'options': []}
 
         # TODO: Handle multiple connection objects (dicts) or lists of information.
         # If the current connection parameter is a dictionary, we treat this as an
         # RTMP object, if this is a list we can treat each item in the list as its own.
         if len(self._custom_connection_parameters) is not 0:
-            connection_packet.body['options'] = []
             for parameter in self._custom_connection_parameters:
                 if type(parameter) is dict:
                     connection_packet.body['options'].append(parameter)
@@ -293,6 +308,7 @@ class RtmpClient:
 
         self.writer.setup_packet(connection_packet)
 
+    # TODO: Should handle packet be automatically called or manually from the loop.
     def handle_packet(self, received_packet):
         """
         Handle packets based on data type.
@@ -300,22 +316,29 @@ class RtmpClient:
         """
         if received_packet.header.data_type == types.DT_USER_CONTROL and received_packet.body['event_type'] == \
                 types.UC_STREAM_BEGIN:
+            # TODO: There should a 'safe' connection established in the event we get a NetConnection.Connection.Sucess.
             assert received_packet.body['event_type'] == types.UC_STREAM_BEGIN, received_packet.body
-            assert received_packet.body['event_data'] == '\x00\x00\x00\x00', received_packet.body
+            # TODO: We can assert the fact that there is a 4-byte empty binary data after the event type,
+            #       this will not be labelled as 'event_data' in the RTMP body however it is present anyway.
+            # TODO: Assertion issue when we receive anything else, e.g. '\x00\x00\x00\x01';
+            #       Handle: onStatus(NetStream.Play.Reset), Stream is Recorded (1), Stream Begin (1),
+            #               onStatus(NetStream.Play.Start), RtmpSampleAccess(), NetStream.Data.Start, onMetaData().
+            #               Buffer Ready - User Control Message 0x20.
+            # assert received_packet.body['event_data'] == '\x00\x00\x00\x00', received_packet.body
             log.debug('Handled STREAM_BEGIN packet: %s' % received_packet.body)
             return True
 
-        elif received_packet.header.data_type == types.DT_WINDOW_ACK_SIZE:
+        elif received_packet.header.data_type == types.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
             # The window acknowledgement may actually vary, rather than one asserted by us,
             # we do not actually handle this specifically (for now).
-            assert received_packet.body['window_ack_size'] == 2500000, received_packet.body
+            assert received_packet.body['window_acknowledgement_size'] == 2500000, received_packet.body
             self.send_window_ack_size(received_packet.body)
             log.debug('Handled WINDOW_ACK_SIZE packet with response to server.')
             return True
 
         elif received_packet.header.data_type == types.DT_SET_PEER_BANDWIDTH:
-            assert received_packet.body['window_ack_size'] == 2500000, received_packet.body
-            # TODO: Should we consider the other limit types: hard and soft (we can just assume dynamic)?
+            assert received_packet.body['window_acknowledgement_size'] == 2500000, received_packet.body
+            # TODO: Should we consider the other limit types: hard and soft (we can just assume dynamic - 2)?
             assert received_packet.body['limit_type'] == 2, received_packet.body
             log.debug('Handled SET_PEER_BANDWIDTH packet: %s' % received_packet.body)
             return True
@@ -329,14 +352,20 @@ class RtmpClient:
         elif received_packet.header.data_type == types.DT_USER_CONTROL and received_packet.body['event_type'] == \
                 types.UC_PING_REQUEST:
             self.send_ping_response(received_packet.body)
+            # TODO: Little-endian unpack order.
+            timestamp_unpacked = struct.unpack('>I', received_packet.body['event_data'])
+            timestamp = timestamp_unpacked[0]
+            print('Ping request timestamp: ' + str(timestamp))
             log.debug('Handled PING_REQUEST packet with response to server.')
             return True
 
         elif received_packet.header.data_type == types.DT_USER_CONTROL and received_packet.body['event_type'] == \
                 types.UC_PING_RESPONSE:
+            # TODO: Little-endian unpack order.
             unpacked_tpl = struct.unpack('>I', received_packet.body['event_data'])
             unpacked_response = unpacked_tpl[0]
-            log.debug('Server sent PONG_REPLY: %s' % unpacked_response)
+            print('Ping response timestamp: ' + str(unpacked_response))
+            log.debug('Server sent PING_RESPONSE: %s' % unpacked_response)
             return True
 
         else:
@@ -345,6 +374,10 @@ class RtmpClient:
     # TODO: Remove stream_id and override_csid slowly.
     # TODO: Monitor the response on the same transaction id and get the transaction id logs of messages?
     # TODO: Handle command object as a list or dictionary.
+    # TODO: createStream requests have a transaction id of 1 (1 more than the transaction id of NetConnection);
+    #       this most likely refers to the latest used - FMS might not recognise it if we send on 0 as it is for
+    #       NetConnection, NetStream is separate? Anything other than 0 could be if a expect a response from the server.
+    # TODO: Tokenize these calls so that if we expect a reply, then we know the reply to get.
     def call(self, procedure_name, parameters=None, transaction_id=None, command_object=None,
              stream_id=0, override_csid=None):
         """
@@ -358,6 +391,7 @@ class RtmpClient:
         """
         # TODO: Allow various forms of parameters to be provided e.g. within parameters maybe a list?
         #       Is this possible?
+
         if transaction_id is None:
             transaction_id = self._transaction_id
 
@@ -373,8 +407,8 @@ class RtmpClient:
         # TODO: Rename 'command'.
         remote_call = self.writer.new_packet()
 
-        remote_call.header.data_type = types.DT_COMMAND
-        remote_call.header.stream_id = stream_id
+        remote_call.set_type(types.DT_COMMAND)
+        remote_call.set_stream_id(stream_id)
         remote_call.body = {
             'command_name': procedure_name,
             'transaction_id': transaction_id,
@@ -383,10 +417,10 @@ class RtmpClient:
             'options': optional_parameters
         }
 
-        log.debug('Sending Remote Procedure Call: %s with content: ', remote_call.body)
+        log.debug('Sending Remote Procedure Call: %s with content:', remote_call.body)
 
-        # print('Command Name: ', procedure_name)
-        # print('Stream Id of RPC:', remote_call.header.stream_id)
+        print('Command Name: ', procedure_name)
+        print('Stream Id of RPC:', remote_call.header.stream_id)
         self.writer.setup_packet(remote_call)
 
     def shared_object_use(self, shared_object):
@@ -398,6 +432,7 @@ class RtmpClient:
             shared_object.use(self.reader, self.writer)
             self._shared_objects.append(shared_object)
 
+    # Default essential messages:
     # TODO: Convert to RtmpPacket.
     def send_window_ack_size(self, amf_data):
         """
@@ -406,14 +441,45 @@ class RtmpClient:
         """
         ack = self.writer.new_packet()
 
-        ack.header.data_type = types.DT_WINDOW_ACK_SIZE
+        ack.set_type(types.DT_WINDOW_ACKNOWLEDGEMENT_SIZE)
         ack.body = {
-            'window_ack_size': amf_data['window_ack_size']
+            'window_acknowledgement_size': amf_data['window_acknowledgement_size']
         }
 
-        log.debug('Sending WINDOW_ACK_SIZE to server: %s' % ack)
+        log.debug('Sending WINDOW_ACKNOWLEDGEMENT_SIZE to server:', ack)
 
         self.writer.setup_packet(ack)
+
+    def send_set_buffer_length(self, stream_id, buffer_length):
+        """
+        Send a SET_BUFFER_LENGTH User Control Message.
+
+        NOTE: This USER_CONTROL_MESSAGE relies on the packing of two bits of binary data,
+              the stream id of the stream joined with the buffer length.
+
+        EXAMPLE: struct.pack('>I', 0) will give us our final packed stream id - in this case \x00\x00\x00\x00(4-byte),
+                 struct.pack('>I', buffer_length*1000) will give us our final buffer length (4-byte),
+                 Joining these together will result in our final 8-byte packed event data (body).
+
+        :param stream_id: int the id of the stream in which we are setting the buffer time for.
+        :param buffer_length: int the number of milliseconds that the client will take to buffer over any data
+                              coming from the server in the stream. E.g. a 'buffer_length' of 3 would denote
+                              3000 ms (milliseconds) of buffer time.
+        """
+        set_buffer = self.writer.new_packet()
+
+        packed_stream_id = struct.pack('>I', stream_id)
+        packed_buffer_length = struct.pack('>I', buffer_length)
+
+        set_buffer.set_type(types.DT_USER_CONTROL)
+        set_buffer.body = {
+            'event_type': types.UC_SET_BUFFER_LENGTH,
+            'event_data': packed_stream_id + packed_buffer_length
+        }
+
+        log.debug('Sending SET_BUFFER_LENGTH (USER_CONTROL_MESSAGE) to server:', set_buffer)
+
+        self.writer.setup_packet(set_buffer)
 
     # TODO: Convert to RtmpPacket.
     def send_ping_request(self):
@@ -431,7 +497,7 @@ class RtmpClient:
             'event_data': struct.pack('>I', int(time.time()))
         }
 
-        log.debug('Sending PING_REQUEST to server: %s' % ping_request)
+        log.debug('Sending PING_REQUEST to server: ', ping_request)
 
         self.writer.setup_packet(ping_request)
 
@@ -449,7 +515,7 @@ class RtmpClient:
             'event_data': amf_data['event_data']
         }
 
-        log.debug('Sending PING_RESPONSE to server: %s' % ping_response)
+        log.debug('Sending PING_RESPONSE to server: ', ping_response)
 
         self.writer.setup_packet(ping_response)
 
@@ -485,9 +551,45 @@ class FileDataTypeMixIn(pyamf.util.pure.DataTypeMixIn):
     def at_eof():
         return False
 
+# TODO: If the socket is a file object and FileDataTypeMixIn inherited read/write, we can just alter
+#       that to read data.
+# TODO: Move this to it's own file, we will be retrieving data from this.
+# TODO: We will have to enclose all BufferedByteStream actions with a recv/send to make sure
+#       the data is present to do these actions.
+# class RtmpByteStream(pyamf.util.pure.BufferedByteStream):
+#     """
+#     This is a wrapper for the buffered-bytestream class within PyAMF, which inherits
+#     the functions from the StringIOProxy and the FileDataTypeMixIn file-object.
+#
+#     We will abstract the process of reading or writing data within the socket in this class.
+#     """
+#
+#     def __init__(self, socket_object, buf_size=128):
+#         """
+#         To initialise we will need the socket object to be provided
+#         :param socket_object:
+#         :param buf_size: int (default 128) the buffer size to read/write data in the socket.
+#         """
+#         self.socket = socket_object
+#         self.buf_size = int(buf_size)
+#
+#     def set_internal_buf_size(self, new_buf_size):
+#         """
+#         Set the amount of data we want to read from the socket usually.
+#         :param new_buf_size:
+#         """
+#         self.buf_size = new_buf_size
+#
+#     def read(self, length=-1):
+#         """
+#         Override the default file-object read function and get the data from socket
+#         with respect to our buffer size.
+#         """
+
 
 __all__ = [
     'pyamf',
     'RtmpClient',
+    'RtmpByteStream',
     'FileDataTypeMixIn'
 ]

@@ -7,7 +7,7 @@ Information:
 
 import time
 
-from rtmp.core.structures import rtmp_header
+from qrtmp.core.structures import rtmp_header
 
 # from rtmp.util import types
 
@@ -75,6 +75,8 @@ class RtmpPacket(object):
     body_is_amf = None
     body_is_so = None
 
+    # TODO: Raise error message in the event that an invalid header and body is trying to be sent, this should prevent
+    #       the message from going into the stream and crashing it.
     def __init__(self, set_header=None, set_body=None):
         """
         Initialise the packet by providing the header information and body data.
@@ -119,7 +121,7 @@ class RtmpPacket(object):
 
     # TODO: A 'get_type' method should also be added.
     # TODO: Abstract all the essential header variables that we can set e.g. data (message) type, body.
-    # Generation convenience methods.
+    # Generation convenience methods:
     def set_type(self, data_type):
         """
         A convenience method to allow the message data type to be set without having to
@@ -143,13 +145,14 @@ class RtmpPacket(object):
         NOTE: This is only to be called once the packet's header is ready to be encoded and
               written onto the stream. We will need the chunk_stream_id, data_type, body.
         """
-        # If the timestamp has still not been established by this point, we set it to zero.
+        # If the timestamp has still not been established by this point, we set it to default (zero).
         if self.header.timestamp is -1:
             self.header.timestamp = 0
 
         if self.body is not None:
             self.header.body_length = len(self.body)
 
+    # AMF-specific convenience methods:
     def get_command_name(self):
         """
         Returns the command name received from the server if the message was a COMMAND
@@ -204,6 +207,7 @@ class RtmpPacket(object):
         self.header = rtmp_header.Header(-1)
         self.body = None
 
+    # TODO: If we print() or log() with string formatting we are unable to use '__repr__'. The reason is still unknown.
     def __repr__(self):
         """
         Return a printable representation of the contents of the header of the RTMPPacket.
@@ -212,7 +216,6 @@ class RtmpPacket(object):
 
         :return: printable representation of header attributes.
         """
-        # if self.header.format is not -1:
         if self.header.chunk_type is not -1:
             return '<RtmpPacket.header> chunk_type=%s chunk_stream_id=%s timestamp=%s body_length=%s ' \
                    'data_type=%s stream_id=%s extended_timestamp=%s (timestamp_absolute=%s timestamp_delta=%s)' % \

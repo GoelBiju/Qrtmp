@@ -46,7 +46,7 @@ DT_USER_CONTROL = 0x4  # 4
 # window size to use when sending acknowledgment.
 # Also known as ServerBW ("server bandwidth") in some RTMP implementations.
 
-DT_WINDOW_ACK_SIZE = 0x5  # 5
+DT_WINDOW_ACKNOWLEDGEMENT_SIZE = 0x5  # 5
 
 # Protocol control message 6
 # The client or the server sends this message to update the output
@@ -168,11 +168,13 @@ UC_STREAM_DRY = 0x02  # 2
 # Type: 3
 # The client sends this event to inform the server of the buffer size
 # (in milliseconds) that is used to buffer any data coming over a stream.
-# This event is sent before the server starts  processing the stream.
+# This event is sent before the server starts processing the stream
+# e.g. following a createStream request.
 
 # Event Data:
 # eventData[0]: the stream ID and
-# eventData[1]: the buffer length, in milliseconds.
+# eventData[1]: the buffer length, in milliseconds
+#               (typically we can send the eventData as 3000ms).
 
 UC_SET_BUFFER_LENGTH = 0x03  # 3
 
@@ -222,8 +224,8 @@ UC_BUFFER_EMPTY = 0x1F  # 31
 # This user control type is not specified in any official documentation, but
 # is sent by Flash Media Server 3.5. Thanks to the rtmpdump devs for their explanation.
 
-# Buffer Ready (unofficial name): After the server has sent a complete buffer, and
-# sends a Buffer Empty message, it will wait until the play
+# Buffer Ready (unofficial name): After the server has sent a complete buffer, it
+# sends a Buffer Empty message. Tt will wait until the play
 # duration of that buffer has passed before sending a new buffer.
 # The Buffer Ready message will be sent when the new buffer starts.
 # (There is no BufferReady message for the very first buffer;
@@ -291,10 +293,10 @@ RTMP_CONTROL_CHANNEL = 0x02
 RTMP_COMMAND_CHANNEL = 0x03
 
 # INFO:
-RTMP_CUSTOM_AUDIO_CHANNEL = 0x04
+RTMP_CUSTOM_AUDIO_CHANNEL = 0x06  # 0x04
 
 # INFO:
-RTMP_CUSTOM_VIDEO_CHANNEL = 0x06
+RTMP_CUSTOM_VIDEO_CHANNEL = 0x07  # 0x06
 
 # INFO:
 RTMP_STREAM_CHANNEL = 0x08

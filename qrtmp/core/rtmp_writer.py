@@ -6,9 +6,9 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from rtmp.core.structures import rtmp_header
-from rtmp.core.structures import packet
-from rtmp.util import types
+from qrtmp.core.structures import rtmp_header
+from qrtmp.core.structures import packet
+from qrtmp.util import types
 
 log = logging.getLogger(__name__)
 
@@ -145,7 +145,10 @@ class RtmpWriter:
             write_packet.header.stream_id = 0
 
             # Set up the body content.
+            # TODO: Event data itself may not be stated in pcap files, however it proceeds after the event type.
+            # if 'event_type' in write_packet.body:
             packet_body_buffer.write_ushort(write_packet.body['event_type'])
+            # if 'event_data' in write_packet.body:
             packet_body_buffer.write(write_packet.body['event_data'])
 
             # Assign the buffered bytestream body value into the RtmpPacket;
@@ -153,7 +156,7 @@ class RtmpWriter:
             write_packet.free_body()
             write_packet.body = packet_body_buffer.getvalue()
 
-        elif write_packet.header.data_type == types.DT_WINDOW_ACK_SIZE:
+        elif write_packet.header.data_type == types.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
             # NOTE: RtmpHeader.ChunkType.TYPE_0_FULL, ChunkStreamInfo.CONTROL_CHANNEL,
             #       RtmpHeader.MessageType.WINDOW_ACKNOWLEDGEMENT_SIZE
 
@@ -163,7 +166,7 @@ class RtmpWriter:
             write_packet.header.stream_id = 0
 
             # Set up the body content.
-            packet_body_buffer.write_ulong(write_packet.body['window_ack_size'])
+            packet_body_buffer.write_ulong(write_packet.body['window_acknowledgement_size'])
 
             # Assign the buffered bytestream body value into the RtmpPacket;
             # freeing the body before-hand.
@@ -180,7 +183,7 @@ class RtmpWriter:
             write_packet.header.stream_id = 0
 
             # Set up the body content.
-            packet_body_buffer.write_ulong(write_packet.body['window_ack_size'])
+            packet_body_buffer.write_ulong(write_packet.body['window_acknowledgement_size'])
             packet_body_buffer.write_uchar(write_packet.body['limit_type'])
 
             # Assign the buffered bytestream body value into the RtmpPacket;
