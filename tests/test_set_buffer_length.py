@@ -13,5 +13,3 @@ print([struct.unpack('>I', '\x00\x00\x00\x00')])
 
 # Pack the buffer length (4-byte) - unsigned integer.
 print([struct.pack('>I', buffer_length)])
-
-

@@ -119,9 +119,20 @@ class RtmpPacket(object):
         self.body_is_amf = False
         self.body_is_so = False
 
+        # Handled descriptor to see if the packet was handled by default or not.
+        self.handled = False
+
     # TODO: A 'get_type' method should also be added.
     # TODO: Abstract all the essential header variables that we can set e.g. data (message) type, body.
-    # Generation convenience methods:
+    # Packet attribute convenience methods:
+    def set_chunk_stream_id(self, chunk_stream_id):
+        """
+        A convenience method to allow the message chunk stream id to be set without having to
+        point to the RtmpHeader initially.
+        :param chunk_stream_id:
+        """
+        self.header.chunk_stream_id = chunk_stream_id
+
     def set_type(self, data_type):
         """
         A convenience method to allow the message data type to be set without having to
@@ -145,7 +156,8 @@ class RtmpPacket(object):
         NOTE: This is only to be called once the packet's header is ready to be encoded and
               written onto the stream. We will need the chunk_stream_id, data_type, body.
         """
-        # If the timestamp has still not been established by this point, we set it to default (zero).
+        # If the timestamp has still not been established by this point,
+        # we set it to default (zero).
         if self.header.timestamp is -1:
             self.header.timestamp = 0
 
@@ -218,7 +230,9 @@ class RtmpPacket(object):
         """
         if self.header.chunk_type is not -1:
             return '<RtmpPacket.header> chunk_type=%s chunk_stream_id=%s timestamp=%s body_length=%s ' \
-                   'data_type=%s stream_id=%s extended_timestamp=%s (timestamp_absolute=%s timestamp_delta=%s)' % \
+                   'data_type=%s stream_id=%s extended_timestamp=%s (timestamp_absolute=%s timestamp_delta=%s) ' \
+                   '<handled:%s>' % \
                    (self.header.chunk_type, self.header.chunk_stream_id, self.header.timestamp,
                     self.header.body_length, self.header.data_type, self.header.stream_id,
-                    self.header.extended_timestamp, self.timestamp_absolute, self.timestamp_delta)
+                    self.header.extended_timestamp, self.timestamp_absolute, self.timestamp_delta,
+                    self.handled)

@@ -31,7 +31,8 @@ class RtmpReader:
 
     def __init__(self, stream):
         """
-        Initialize the RTMP reader and set it to read from the specified stream.
+        Initialise the RTMP reader and set it to read from the specified stream.
+        :param stream:
         """
         self.stream = stream
         self.previous_header = None
@@ -39,24 +40,28 @@ class RtmpReader:
     def __iter__(self):
         return self
 
-    # TODO: Not properly decoding headers may result in the loop decoding here until a restart.
-    # TODO: Read packet and the actual decoding of the packet should be in two different sections.
-    def read_packet(self):
-        """
-        Abstracts the process of decoding the data and then generating an RtmpPacket.
-        :return: RtmpPacket (with header and body).
-        """
-        if not self.stream.at_eof():
-            decoded_header, decoded_body = self.decode_stream()
-            # print('Decoding next header and body ...')
-            # print(decoded_header, decoded_body)
-            # print('Generating next RtmpPacket ....')
-            rtmp_packet = self.generate_packet(decoded_header, decoded_body)
-            print(rtmp_packet)
-            return rtmp_packet
-        else:
-            # TODO: Is this the right raise error to call?
-            raise StopIteration
+    # # TODO: Not properly decoding headers may result in the loop decoding here until a restart.
+    # # TODO: Read packet and the actual decoding of the packet should be in two different sections.
+    # def read_packet(self):
+    #     """
+    #     Abstracts the process of decoding the data and then generating an RtmpPacket.
+    #     :return: RtmpPacket (with header and body).
+    #     """
+    #     if not self.stream.at_eof():
+    #         decoded_header, decoded_body = self.decode_stream()
+    #         # print('Decoding next header and body ...')
+    #         # print(decoded_header, decoded_body)
+    #         # print('Generating next RtmpPacket ....')
+    #         rtmp_packet = self.generate_packet(decoded_header, decoded_body)
+    #
+    #         # Handle default packet messages.
+    #         if self.handle_default_messages:
+    #
+    #         print(rtmp_packet)
+    #         return rtmp_packet
+    #     else:
+    #         # TODO: Is this the right raise error to call?
+    #         raise StopIteration
 
     def decode_stream(self):
         """
@@ -122,6 +127,65 @@ class RtmpReader:
 
         return decoded_header, decoded_body
 
+    @staticmethod
+    def read_shared_object_event(body_stream, decoder):
+        """
+        Helper method that reads one shared object event found inside a shared
+        object RTMP message.
+        :param body_stream:
+        :param decoder:
+        """
+        so_body_type = body_stream.read_uchar()
+        so_body_size = body_stream.read_ulong()
+
+        event = {'type': so_body_type}
+        if event['type'] == types.SO_USE:
+            assert so_body_size == 0, so_body_size
+            event['data'] = ''
+
+        elif event['type'] == types.SO_RELEASE:
+            assert so_body_size == 0, so_body_size
+            event['data'] = ''
+
+        elif event['type'] == types.SO_CHANGE:
+            start_pos = body_stream.tell()
+            changes = {}
+            while body_stream.tell() < start_pos + so_body_size:
+                attrib_name = decoder.readString()
+                attrib_value = decoder.readElement()
+                assert attrib_name not in changes, (attrib_name, changes.keys())
+                changes[attrib_name] = attrib_value
+            assert body_stream.tell() == start_pos + so_body_size, \
+                (body_stream.tell(), start_pos, so_body_size)
+            event['data'] = changes
+
+        elif event['type'] == types.SO_SEND_MESSAGE:
+            start_pos = body_stream.tell()
+            msg_params = []
+            while body_stream.tell() < start_pos + so_body_size:
+                msg_params.append(decoder.readElement())
+            assert body_stream.tell() == start_pos + so_body_size, \
+                (body_stream.tell(), start_pos, so_body_size)
+            event['data'] = msg_params
+
+        elif event['type'] == types.SO_CLEAR:
+            assert so_body_size == 0, so_body_size
+            event['data'] = ''
+
+        elif event['type'] == types.SO_REMOVE:
+            event['data'] = decoder.readString()
+
+        elif event['type'] == types.SO_USE_SUCCESS:
+            assert so_body_size == 0, so_body_size
+            event['data'] = ''
+
+        else:
+            assert False, event['type']
+
+        return event
+
+    # TODO: Statistics element to each packet in the generation process, the number of the packet and the time in which
+    #       it was received by the client.
     def generate_packet(self, decoded_header, decoded_body):
         """
         Generate an RtmpPacket based on the header and body we decoded from the RTMP stream.
@@ -185,10 +249,6 @@ class RtmpReader:
                 'control': None,
                 'audio_data': None
             }
-            # received_packet.body = decoded_body.read()
-            # if len(decoded_body) is not 0:
-
-            # print(len(decoded_body))
 
             # TODO: Handle in the event that there is no RTMP body in the message.
             if len(decoded_body) is not 0:
@@ -335,60 +395,3 @@ class RtmpReader:
         log.debug('Generated RtmpPacket: %r' % repr(received_packet))
         # print('[Read] %s' % repr(received_packet))
         return received_packet
-
-    @staticmethod
-    def read_shared_object_event(body_stream, decoder):
-        """
-        Helper method that reads one shared object event found inside a shared
-        object RTMP message.
-        :param body_stream:
-        :param decoder:
-        """
-        so_body_type = body_stream.read_uchar()
-        so_body_size = body_stream.read_ulong()
-
-        event = {'type': so_body_type}
-        if event['type'] == types.SO_USE:
-            assert so_body_size == 0, so_body_size
-            event['data'] = ''
-
-        elif event['type'] == types.SO_RELEASE:
-            assert so_body_size == 0, so_body_size
-            event['data'] = ''
-
-        elif event['type'] == types.SO_CHANGE:
-            start_pos = body_stream.tell()
-            changes = {}
-            while body_stream.tell() < start_pos + so_body_size:
-                attrib_name = decoder.readString()
-                attrib_value = decoder.readElement()
-                assert attrib_name not in changes, (attrib_name, changes.keys())
-                changes[attrib_name] = attrib_value
-            assert body_stream.tell() == start_pos + so_body_size,\
-                (body_stream.tell(), start_pos, so_body_size)
-            event['data'] = changes
-
-        elif event['type'] == types.SO_SEND_MESSAGE:
-            start_pos = body_stream.tell()
-            msg_params = []
-            while body_stream.tell() < start_pos + so_body_size:
-                msg_params.append(decoder.readElement())
-            assert body_stream.tell() == start_pos + so_body_size,\
-                (body_stream.tell(), start_pos, so_body_size)
-            event['data'] = msg_params
-
-        elif event['type'] == types.SO_CLEAR:
-            assert so_body_size == 0, so_body_size
-            event['data'] = ''
-
-        elif event['type'] == types.SO_REMOVE:
-            event['data'] = decoder.readString()
-
-        elif event['type'] == types.SO_USE_SUCCESS:
-            assert so_body_size == 0, so_body_size
-            event['data'] = ''
-
-        else:
-            assert False, event['type']
-
-        return event
