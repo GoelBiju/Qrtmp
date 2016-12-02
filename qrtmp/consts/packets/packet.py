@@ -7,28 +7,26 @@ Information:
 
 import time
 
-from qrtmp.core.structures import rtmp_header
-
-# from rtmp.util import types
-
-# The handshake length.
-HANDSHAKE_LENGTH = 1536
+from qrtmp.consts.packets import rtmp_header
 
 
 class HandshakePacket(object):
     """
-    A handshake packet.
+    An RTMP handshake packet.
 
     @ivar first: The first 4 bytes of the packet, represented as an unsigned long.
     @type first: 32bit unsigned int.
     @ivar second: The second 4 bytes of the packet, represented as an unsigned long.
     @type second: 32bit unsigned int.
     @ivar payload: A blob of data which makes up the rest of the packet.
-                   This must be C{HANDSHAKE_LENGTH} - 8 bytes in length.
+                   This must be C{handshake_length} - 8 bytes in length.
     @type payload: C{str}
     @ivar timestamp: Timestamp that this packet was created (in milliseconds).
     @type timestamp: C{int}
     """
+    # The handshake length.
+    handshake_length = 1536
+
     # Initialise packet content.
     first = None
     second = None
@@ -36,6 +34,10 @@ class HandshakePacket(object):
     timestamp = None
 
     def __init__(self, **kwargs):
+        """
+
+        :param kwargs:
+        """
         timestamp = kwargs.get('timestamp', None)
 
         if timestamp is None:
@@ -44,7 +46,10 @@ class HandshakePacket(object):
         self.__dict__.update(kwargs)
 
     def encode(self, stream_buffer):
-        """ Encodes this packet to a stream. """
+        """
+        Encodes this packet to a stream.
+        :param stream_buffer:
+        """
         # Write the first and second data into the stream.
         stream_buffer.write_ulong(self.first or 0)
         stream_buffer.write_ulong(self.second or 0)
@@ -53,13 +58,16 @@ class HandshakePacket(object):
         stream_buffer.write(self.payload)
 
     def decode(self, stream_buffer):
-        """ Decodes this packet from a stream. """
+        """
+        Decodes this packet from a stream.
+        :param stream_buffer:
+        """
         # Read the first and second data from the stream buffer.
         self.first = stream_buffer.read_ulong()
         self.second = stream_buffer.read_ulong()
 
-        # Read the message payload from the stream buffer.
-        self.payload = stream_buffer.read(HANDSHAKE_LENGTH - 8)
+        # Read the message payload from the stream buffer given the handshake length.
+        self.payload = stream_buffer.read(self.handshake_length - 8)
 
 
 # TODO: Any other essential packet methods?
@@ -208,6 +216,14 @@ class RtmpPacket(object):
             return self.body['response']
         else:
             return None
+
+    # TODO: Make a raw body contents function to get all the body content in a list. Like previously to use iparam.
+    # def get_body(self):
+    #     """
+    #
+    #     :return: list
+    #     """
+    #     pass
 
     # Handler convenience methods.
     def free_body(self):

@@ -6,13 +6,11 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from qrtmp.core.structures import rtmp_header
-from qrtmp.core.structures import packet
-from qrtmp.util import types
+from qrtmp.consts.packets import packet
+from qrtmp.consts.packets import rtmp_header
+from qrtmp.consts.packets import types
 
 log = logging.getLogger(__name__)
-
-# TODO: write.flush() should be called automatically after the packet has been sent.
 
 
 class RtmpWriter:
@@ -266,8 +264,21 @@ class RtmpWriter:
             if override_csid is None:
                 write_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL
 
+            encoder = pyamf.amf0.Encoder(packet_body_buffer)
             # Set up the body content.
-            packet_body_buffer.write(write_packet.body['metadata'])
+            encoder.writeElement(write_packet.body['onMetaData'])
+            """
+            ('Packet:', {'data_content': [
+                {'videoframerate': 24, 'moovposition': 8671904, 'avclevel': 30, 'avcprofile': 66,
+                 'audiosamplerate': 12000, 'audiocodecid': u'mp4a', 'framerate': 24, 'height': 160, 'width': 240,
+                 'displayWidth': 240, 'audiochannels': 2, 'frameHeight': 160, 'frameWidth': 240, 'duration': 596.48,
+                 'displayHeight': 160, 'aacaot': 2, 'videocodecid': u'avc1', 'trackinfo': [
+                    {'length': 14315, 'language': u'eng', 'timescale': 24,
+                     'sampledescription': [{'sampletype': u'avc1'}]},
+                    {'length': 7157760, 'language': u'eng', 'timescale': 12000,
+                     'sampledescription': [{'sampletype': u'mp4a'}]}]}], 'data_name': u'onMetaData'})
+            """
+            encoder.writeMixedArray(write_packet.body['metadata'])
 
             # Assign the buffered bytestream body value into the RtmpPacket;
             # freeing the body before-hand.
@@ -350,6 +361,7 @@ class RtmpWriter:
         # Send the packet we have generated.
         self.send_packet(write_packet)
 
+        # TODO: write.flush() should be called automatically after the packet has been sent.
         # Flush file-object.
         self.flush()
 

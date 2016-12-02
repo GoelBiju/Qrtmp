@@ -1,6 +1,6 @@
 """
 Qrtmp Library
-Version: 0.1.1
+Version: 0.1.0
 """
 
 import logging
@@ -12,8 +12,8 @@ import time
 import pyamf
 import pyamf.util.pure
 
-from qrtmp.consts.packets import packet
-from qrtmp.consts.packets import types
+from qrtmp.consts import packet
+from qrtmp.consts.packets import types, packet
 from qrtmp.io import rtmp_reader
 from qrtmp.io import rtmp_writer
 from qrtmp.util import socks
@@ -35,6 +35,25 @@ log = logging.getLogger(__name__)
 
 # class NetStreamPlay(object):
 #     """ A class for holding a NetStream play stream information. """
+
+class NetConnection:
+    """ An instance to handle all NetConnecton based functionality. """
+
+    def __init__(self):
+        """
+
+        """
+        pass
+
+
+class NetStream:
+    """ An instance to handle all NetStream based functionality. """
+
+    def __init__(self):
+        """
+
+        """
+        pass
 
 
 # TODO: Make sure the main message sending methods only work with a valid connection, otherwise we pause
@@ -561,15 +580,14 @@ class RtmpClient:
     #       the inheriting class.
     # TODO: Allow various forms of parameters to be provided e.g. within parameters maybe a list?
     #       Is this possible?
-    # TODO: Fix issue with the parameters going into the transaction id due the transaction id field in function
-    #       stated first.
-    def call(self, procedure_name, parameters=None, transaction_id=None, command_object=None, amf3=False):
+    # stream_id=0
+    def call(self, procedure_name, transaction_id=None, command_object=None, parameters=None, amf3=False):
         """
         Runs a remote procedure call (RPC) on the receiving end.
         :param procedure_name: str
-        :param parameters: list
         :param transaction_id: int
         :param command_object: list
+        :param parameters: list
         :param amf3: bool True/False
         """
         # :param stream_id: int
@@ -602,8 +620,7 @@ class RtmpClient:
             'command_name': procedure_name,
             'transaction_id': transaction_id,
             # TODO: Avoid using this type of way of wrapping an object. If it isn't iterable we can just assume.
-            # TODO: We are assuming the command object is provided as a whole dictionary.
-            'command_object': command_object,
+            'command_object': None,
             'options': optional_parameters
         }
 

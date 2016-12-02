@@ -15,10 +15,9 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from qrtmp.core.structures import rtmp_header
-from qrtmp.core.structures import packet
-from qrtmp.util import types
-
+from qrtmp.consts.packets import packet
+from qrtmp.consts.packets import rtmp_header
+from qrtmp.consts.packets import types
 
 log = logging.getLogger(__name__)
 

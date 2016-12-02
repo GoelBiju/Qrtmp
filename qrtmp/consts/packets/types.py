@@ -8,15 +8,16 @@ by faucamp, based in the Java programming language. It has only been slightly al
 
 # TODO: The file name has been altered to types.py and variables names have been modified.
 # TODO: The shared object event types and user control types have been placed in here along with AMF3 types.
+# TODO: Split into the files based on command types.
+# TODO: Remove DT, UC prefixes after moving to files.
 
 # === Data types ===
 
+# TODO: Remove these type of constants.
 # This is used in the case that the data type we receive could not be recognised.
-# DT_NONE = -0x1  # -1
 
 # Protocol control message 1
 # Set Chunk Size, is used to notify the peer a new maximum chunk size to use.
-
 DT_SET_CHUNK_SIZE = 0x1  # 1
 
 # Protocol control message 2
@@ -129,6 +130,7 @@ DT_AGGREGATE_MESSAGE = 0x16  # 22
 
 # === User Control types ===
 
+# TODO: Remove these type of constants.
 # This is used in the case that the data type we receive could not be recognised.
 # UC_NONE = -0x1  # -1
 
