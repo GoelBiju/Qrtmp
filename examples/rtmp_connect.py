@@ -34,13 +34,19 @@
 #         End Of Object Marker
 
 # 1. Import essential modules.
-import time
+# import time
 import threading
 
-from qrtmp import rtmp
+# from qrtmp import rtmp
+from qrtmp.base import net_connection
+
+# Initialise the NetConnection object.
+nc = net_connection.NetConnection()
 
 # 2. Establish our TCP connection parameters:
 ip_address = '184.72.239.149'
+
+nc.set_rtmp_server(ip_address)
 
 # 3. Establish our RTMP connection parameters:
 app = 'vod'
@@ -49,39 +55,47 @@ swf_url = 'https://www.hdwplayer.com/en/components/com_hdwplayer/player.swf?r=15
 page_url = 'https://www.hdwplayer.com/rtmp-streaming-video-player/'
 
 # 4. Setup client and its parameters:
-connection = rtmp.RtmpClient(ip_address, app=app, tc_url=tc_url, page_url=page_url)
+# connection = rtmp.RtmpClient(ip_address, app=app, tc_url=tc_url, page_url=page_url)
+
+nc.set_rtmp_parameters(app, tc_url=tc_url, swf_url=swf_url, page_url=page_url)
 
 #   - set our rtmp client to be recognised as running on Windows:
-connection.flash_ver = connection.windows_flash_version
+# connection.flash_ver = connection.windows_flash_version
+
+nc.flash_ver = nc.windows_flash_version
 
 # 5. Attempt a connection with the server and return a boolean:
 #    stating if we have made a connection or not:
-valid_connection = connection.connect()
+# valid_connection = connection.connect()
+
+nc.rtmp_connect()
 
 
 def packet_loop():
-    """ A method to loop and handle the packets we receive. """
-    while valid_connection:
-        # Read a packet we receive from the server:
-        received_packet = connection.read_packet()
-        print('Packet:', received_packet.body)
+    """ A method to loop and handle the formats we receive. """
+    # while valid_connection:
+    # Read a packet we receive from the server:
+    # received_packet = connection.read_packet()
 
+    while True:
+        received_packet = nc.read_packet()
+        print('Received packet:', received_packet.body)
 
 # 6. Loop the replies we receive from the server and handle them
 #    appropriately using the packet loop function in a thread:
 threading.Thread(target=packet_loop).start()
 
 # Wait several seconds before we continue to ensure that we have a successful connection.
-time.sleep(7)
+# time.sleep(7)
 
 # Sending NetConnection and NetStream specific messages:
 #   - call a 'createStream' request.
-connection.send_create_stream()
+# connection.send_create_stream()
 #   - send a 'SET_BUFFER_LENGTH' User Control Message with the stream id 0 and 3000ms buffer time.
-connection.send_set_buffer_length(stream_id=0, buffer_length=3000)
+# connection.send_set_buffer_length(stream_id=0, buffer_length=3000)
 
 #   - call a 'play' request on the file we want to stream.
-mp4_file_name = 'mp4:BigBuckBunny_115k.mov'
+# mp4_file_name = 'mp4:BigBuckBunny_115k.mov'
 #   - send a 'SET_BUFFER_LENGTH' User Control Message with this time a stream id of 1 and the same 3000ms buffer time.
-connection.send_play(stream_id=1, stream_name=mp4_file_name)
-connection.send_set_buffer_length(stream_id=1, buffer_length=3000)
+# connection.send_play(stream_id=1, stream_name=mp4_file_name)
+# connection.send_set_buffer_length(stream_id=1, buffer_length=3000)

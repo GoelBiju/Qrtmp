@@ -606,7 +606,7 @@ class RtmpClient:
 
     # NETCONNECTION
     def handle_packet(self, amf_data):
-        """ Handle default packets based on data-types. """
+        """ Handle default formats based on data-types. """
         if amf_data['msg'] == data_types.USER_CONTROL and amf_data['event_type'] == user_control_types.PING_REQUEST:
             ping_response = {
                 'msg': data_types.USER_CONTROL,

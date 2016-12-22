@@ -1,6 +1,6 @@
 """
 Qrtmp Library
-Version: 0.1.1
+Version: 0.2.0
 """
 
 import logging
@@ -12,8 +12,9 @@ import time
 import pyamf
 import pyamf.util.pure
 
-from qrtmp.consts.packets import packet
-from qrtmp.consts.packets import types
+from qrtmp.consts.formats import handshake
+from qrtmp.consts.formats import rtmp_packet
+from qrtmp.consts.formats import types
 from qrtmp.io import rtmp_reader
 from qrtmp.io import rtmp_writer
 from qrtmp.util import socks
@@ -29,7 +30,7 @@ log = logging.getLogger(__name__)
 # TODO: Remove usage of 'message' dicts, we will be creating RtmpPackets from everywhere, this is more convenient.
 # TODO: Allow the use of the status.py module to define the properties object and information object fields
 #       returned from the server in a "_result" or "_error" RPC packet.
-# TODO: NetConnection/NetStream classes and make RtmpClient inherit those and deal with packets that way.
+# TODO: NetConnection/NetStream classes and make RtmpClient inherit those and deal with formats that way.
 # TODO: RtmpReader and RtmpWriter RPC command message read/write methods are not similar.
 
 
@@ -73,7 +74,7 @@ class RtmpClient:
         """
         Initialise a new RTMP client connection object using the parameters that have been provided.
 
-        :param ip: str the I.P. address to connect to the server with.
+        :param ip: str the IP address to connect to the server with.
         :param port: (default 1935)
         :param proxy: (default None)
 
@@ -146,6 +147,7 @@ class RtmpClient:
 
     def connect(self):
         """ Connect to the server with the given connect parameters. """
+        # TODO: Refine this if statement.
         if self._proxy:
             parts = self._proxy.split(':')
             ip = parts[0]
@@ -231,10 +233,10 @@ class RtmpClient:
     def handshake(self):
         """ Perform the handshake sequence with the server. """
         # Initialise all the handshake packet we will be sending.
-        c1 = packet.HandshakePacket()
-        s1 = packet.HandshakePacket()
-        c2 = packet.HandshakePacket()
-        s2 = packet.HandshakePacket()
+        c1 = handshake.HandshakeChunk()
+        s1 = handshake.HandshakeChunk()
+        c2 = handshake.HandshakeChunk()
+        s2 = handshake.HandshakeChunk()
 
         # Handle the C1 chunk.
         self.stream.write_uchar(3)
@@ -285,7 +287,7 @@ class RtmpClient:
         # Stream ID: 0
 
         # Initialise an RTMPPacket for use.
-        connection_packet = packet.RtmpPacket()
+        connection_packet = rtmp_packet.RtmpPacket()
 
         # Set up the connection packet's header:
         #   - initial connection timestamp is set to zero:
@@ -336,7 +338,7 @@ class RtmpClient:
         :return: RtmpPacket (with header and body).
         """
         if not self.stream.at_eof():
-            decoded_header, decoded_body = self.reader.decode_stream()
+            decoded_header, decoded_body = self.reader.decode_rtmp_stream()
             # print('--> Decoding new header and body...')
             # print(decoded_header, decoded_body)
             # print('--> Generating new RtmpPacket...')
@@ -350,7 +352,7 @@ class RtmpClient:
                 # print(received_packet)
             return received_packet
         else:
-            # TODO: Is this the right raise error to call?
+            # TODO: Is it right to raise this error?
             raise StopIteration
 
     # TODO: Should handle packet be automatically called or manually from the loop.
@@ -363,7 +365,7 @@ class RtmpClient:
     #   - '_result' (NetConnection.Connect.Success)
     def handle_packet(self, received_packet):
         """
-        Handle packets based on data type.
+        Handle formats based on data type.
         :param received_packet: RtmpPacket object with both the header information and decoded [AMF] body.
         """
         if received_packet.header.data_type == types.DT_USER_CONTROL and received_packet.body['event_type'] == \
@@ -465,12 +467,16 @@ class RtmpClient:
         """
         Send a SET_BUFFER_LENGTH User Control Message.
 
-        NOTE: This USER_CONTROL_MESSAGE relies on the packing of two bits of binary data,
-              the stream id of the stream joined with the buffer length.
+        NOTES:
 
-        EXAMPLE: struct.pack('>I', 0) will give us our final packed stream id - in this case \x00\x00\x00\x00 (4-byte),
-                 struct.pack('>I', buffer_length) will give us our final buffer length (4-byte),
-                 Joining these together will result in our final 8-byte packed event data (body).
+            This USER_CONTROL_MESSAGE relies on the packing of two bits of binary data,
+            the stream id of the stream joined with the buffer length.
+
+        Example:
+
+            struct.pack('>I', 0) will give us our final packed stream id - in this case \x00\x00\x00\x00 (4-byte),
+            struct.pack('>I', buffer_length) will give us our final buffer length (4-byte),
+            Joining these together will result in our final 8-byte packed event data (body).
 
         :param stream_id: int the id of the stream in which we are setting the buffer time for.
         :param buffer_length: int the number of milliseconds that the client will take to buffer over any data
@@ -890,41 +896,6 @@ class FileDataTypeMixIn(pyamf.util.pure.DataTypeMixIn):
     @staticmethod
     def at_eof():
         return False
-
-# TODO: If the socket is a file object and FileDataTypeMixIn inherited read/write, we can just alter
-#       that to read data.
-# TODO: Move this to it's own file, we will be retrieving data from this.
-# TODO: We will have to enclose all BufferedByteStream actions with a recv/send to make sure
-#       the data is present to do these actions.
-# class RtmpByteStream(pyamf.util.pure.BufferedByteStream):
-#     """
-#     This is a wrapper for the buffered-bytestream class within PyAMF, which inherits
-#     the functions from the StringIOProxy and the FileDataTypeMixIn file-object.
-#
-#     We will abstract the process of reading or writing data within the socket in this class.
-#     """
-#
-#     def __init__(self, socket_object, buf_size=128):
-#         """
-#         To initialise we will need the socket object to be provided
-#         :param socket_object:
-#         :param buf_size: int (default 128) the buffer size to read/write data in the socket.
-#         """
-#         self.socket = socket_object
-#         self.buf_size = int(buf_size)
-#
-#     def set_internal_buf_size(self, new_buf_size):
-#         """
-#         Set the amount of data we want to read from the socket usually.
-#         :param new_buf_size:
-#         """
-#         self.buf_size = new_buf_size
-#
-#     def read(self, length=-1):
-#         """
-#         Override the default file-object read function and get the data from socket
-#         with respect to our buffer size.
-#         """
 
 
 __all__ = [

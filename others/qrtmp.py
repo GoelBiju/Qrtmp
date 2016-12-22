@@ -12,13 +12,13 @@
 
 
 # AMF Encoding/Decoding:
-# The process of encoding or decoding AMF packets should be done via PyAMF/AMFast - both of which
+# The process of encoding or decoding AMF formats should be done via PyAMF/AMFast - both of which
 # are supported in the amfast library.
 
 
 # Pre-connection:
 # 1. Should handle all the necessary processes to establish a connection between client and server
-# all before the exchange of whatever standard of packets has begun.
+# all before the exchange of whatever standard of formats has begun.
 
 # NetConnection:
 # 1. Should have all the procedures necessary to establish the initial connection to a server.

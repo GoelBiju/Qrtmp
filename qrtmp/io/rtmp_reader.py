@@ -1,7 +1,6 @@
 """
 Provides classes for creating RTMP (Real Time Message Protocol) for servers and clients.
 
-TODO: Information regarding background/authors.
 prekageo - https://github.com/prekageo/rtmp-python/
 nortxort - https://github.com/nortxort/pinylib/
 
@@ -9,15 +8,17 @@ RTMP general information: http://www.adobe.com/devnet/rtmp.html
 RTMP Specification V1.0: http://wwwimages.adobe.com/content/dam/Adobe/en/devnet/rtmp/pdf/rtmp_specification_1.0.pdf
 """
 
+# TODO: Information regarding background and authors.
+
 import logging
 
 import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from qrtmp.consts.packets import packet
-from qrtmp.consts.packets import rtmp_header
-from qrtmp.consts.packets import types
+from qrtmp.consts.formats import rtmp_packet
+from qrtmp.consts.formats import rtmp_header
+from qrtmp.consts.formats import types
 
 log = logging.getLogger(__name__)
 
@@ -25,18 +26,23 @@ log = logging.getLogger(__name__)
 class RtmpReader:
     """ This class reads RTMP messages from a stream. """
 
-    # Default read chunk size.
-    chunk_size = 128
-
-    def __init__(self, stream):
+    def __init__(self, rtmp_stream):
         """
         Initialise the RTMP reader and set it to read from the specified stream.
-        :param stream:
+        :param rtmp_stream:
         """
-        self.stream = stream
+        self._rtmp_stream = rtmp_stream
+
+        # Default read chunk size.
+        self.chunk_size = 128
+
         self.previous_header = None
 
     def __iter__(self):
+        """
+
+        :return self: class object
+        """
         return self
 
     # # TODO: Not properly decoding headers may result in the loop decoding here until a restart.
@@ -62,17 +68,18 @@ class RtmpReader:
     #         # TODO: Is this the right raise error to call?
     #         raise StopIteration
 
-    def decode_stream(self):
+    def decode_rtmp_stream(self):
         """
         Decodes the header and body from the RTMP stream.
-        :return: decoded header and body.
+
+        :return decoded_header, decoded_body:
         """
         # TODO: Simplify (if we can) the header decode and read process.
         # The message may span a number of chunks (each one with its own header).
         # message_body = []
         msg_body_len = 0
 
-        decoded_header = rtmp_header.decode(self.stream)
+        decoded_header = rtmp_header.decode(self._rtmp_stream)
         decoded_body = pyamf.util.BufferedByteStream('')
 
         log.debug('read_packet() header %s' % decoded_header)
@@ -97,21 +104,21 @@ class RtmpReader:
             # Compare the message body length with the bytes read.
             # message_body.append(self.stream.read(read_bytes))
             # TODO: Removed the use of the list, we can use the append function in pyamf BufferedByteStream.
-            decoded_body.append(self.stream.read(read_bytes))
+            decoded_body.append(self._rtmp_stream.read(read_bytes))
 
             msg_body_len += read_bytes
             if msg_body_len >= decoded_header.body_length:
                 break
 
             # Decode the next header in the stream.
-            next_header = rtmp_header.decode(self.stream)
+            next_header = rtmp_header.decode(self._rtmp_stream)
 
             # TODO: Evaluate the need for this; is this consistent with all RTMP implementations?
             # WORKAROUND: Even though the RTMP specification states that the extended timestamp
             #             field DOES NOT follow type 3 chunks, it seems that Flash player 10.1.85.3
             #             and Flash Media Server 3.0.2.217 send and expect this field here.
             if decoded_header.timestamp >= 0x00ffffff:
-                self.stream.read_ulong()
+                self._rtmp_stream.read_ulong()
 
             # TODO: Assertion tests to see if the next header we get is generated with the constant -1 (default) values.
             assert next_header.timestamp == -1, (rtmp_header, next_header)
@@ -193,10 +200,10 @@ class RtmpReader:
         :return: The generated RtmpPacket or None if the packet could not be generated.
         """
         # TODO: Include in the ret, distinctly, the header and the body.
-        # Decode the message based on the datatype present in the header.
+        # Decode the message based on the data-type present in the header.
         # Initialise an RTMP packet instance, to store the information we received,
         # by providing the header.
-        received_packet = packet.RtmpPacket(decoded_header)
+        received_packet = rtmp_packet.RtmpPacket(decoded_header)
 
         # Given the header message type id (data_type), let us decode the message body appropriately.
         # TODO: Re-organise these branches to match that of the RtmpWriters.

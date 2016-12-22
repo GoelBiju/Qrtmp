@@ -15,186 +15,11 @@ https://github.com/nortxort/pinylib/). Along with the fixes required to form RTM
 
 GoelBiju (https://github.com/GoelBiju/)
 
-
-NOTE: The notes below are taken from the rtmplite project and have been slightly modified -
-     (https://github.com/theintencity/rtmplite/)
-
-How the header format works:
-----------------------------
-
-NOTE: Here is a part of the documentation to understand how the Chunks' headers work.
-      To have a complete documentation, YOU HAVE TO READ RTMP Specification V1.0 (rtmp_specification_1.0.pdf) -
-      http://wwwimages.adobe.com/content/dam/Adobe/en/devnet/rtmp/pdf/rtmp_specification_1.0.pdf (page 13 onwards).
-
-This is the format of a chunk. Here, we store all except the chunk data:
-------------------------------------------------------------------------
-+-------------+----------------+-------------------+--------------+
-| Basic header|Chunk Msg Header|Extended Time Stamp|   Chunk Data |
-+-------------+----------------+-------------------+--------------+
-
-This are the formats of the basic header:
------------------------------------------
- 0 1 2 3 4 5 6 7      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|fmt|   cs id   |    |fmt|     0     |   cs id - 64  |    |fmt|     1     |        cs id - 64             |
-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  (cs id < 64)            (64 <= cs id < 320)                           (320 <= cs id)
-
-'fmt' stores the format of the chunk message header. There are four different formats.
-
-
-Type 0 (fmt=00):
-----------------
-fmt = 00 (binary) / fmt = 0 (decimal)
-
-This type MUST be used at the start of a chunk stream, and whenever the stream timestamp goes backward (e.g., because
-of a backwards seek).
-
-
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                      timestamp                |                message length                 |message type id|                message stream id              |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-Type 1 (fmt=01):
-----------------
-fmt = 01 (binary) / fmt = 1 (decimal)
-
-Streams with variable-sized messages (for example, many video formats) SHOULD use this format for the first chunk
-of each new message after the first.
-
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                timestamp delta                |                message length                 |message type id|
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-Type 2 (fmt=10):
-----------------
-fmt = 10 (binary) / fmt = 2 (decimal)
-
-Streams with constant-sized messages (for example, some audio and data formats) SHOULD use this format for the first
-chunk of each message after the first.
-
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                timestamp delta                |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-Type 3 (fmt=11):
-----------------
-fmt=11 (binary)/ fmt=3 (decimal)
-
-
-Chunks of Type 3 have no header. Stream ID, message length and timestamp delta are not present; chunks of this type take
-values from the preceding chunk. When a single message is split into chunks, all chunks of a message except the first
-one, SHOULD use this type.
-
-
-Extended Timestamp:
--------------------
-NOTE: Type 3 chunks MUST NOT have this field.
-      This field MUST NOT be present if the timestamp field is not present.
-      If normal timestamp is set to any value less than 0x00ffffff, this field MUST NOT be present.
-
-This field is transmitted only when the normal time stamp in the chunk message header is set to 0x00ffffff.
-This field, if transmitted, is located immediately after the chunk message header and before the chunk data.
-
-Standard Chunk Stream ID Assignments:
--------------------------------------
-/**
- * the chunk stream id used for some under-layer message,
- * for example, the PC(protocol control) message.
- */
-RTMP_CID_ProtocolControl                0x02
-
-/**
- * the AMF0/AMF3 command message, invoke method and return the result, over NetConnection.
- * generally use 0x03.
- */
-RTMP_CID_OverConnection                 0x03
-
-/**
- * the AMF0/AMF3 command message, invoke method and return the result, over NetConnection,
- * the midst state(we guess).
- * rarely used, e.g. onStatus(NetStream.Play.Reset).
- */
-RTMP_CID_OverConnection2                0x04
-
-/**
- * the stream message(amf0/amf3), over NetStream.
- * generally use 0x05.
- */
-RTMP_CID_OverStream                     0x05
-
-/**
- * the stream message(amf0/amf3), over NetStream, the midst state(we guess).
- * rarely used, e.g. play("mp4:mystream.f4v")
- */
-RTMP_CID_OverStream2                    0x08
-
-/**
- * the stream message(video), over NetStream
- * generally use 0x06.
- */
-RTMP_CID_Video                          0x06
-
-/**
- * the stream message(audio), over NetStream.
- * generally use 0x07.
- */
-RTMP_CID_Audio                          0x07
-
-
-Sending Audio/Video Data (message type 8/9):
-------------------------------------
-
-NOTE: When using the channel, it is equal to the format + whatever chunk stream ID the RTMP messages are to be sent on.
-
-When we send the video data we initially send a packet in which:
-
-Initial packet:
-    • header:
-        - format WILL BE 0
-        - a chunk stream id
-
-        - timestamp (absolute)
-        - message (body) size
-        - message type id
-        - message stream id
-
-    • body:
-        - Control type (sometimes keyframe e.g. 0x12 - keyframes may have times at which they are sent e.g. every 50
-                        packets of video data sent we send a keyframe)
-        - Audio/Video data (sometimes FLV data e.g. Sorenson H263/MP3)
-
-Remaining packets:
-    • header:
-        - format SHOULD BE 3 (if it is audio we are sending and the body size is the same, we can send on format 2)
-        - same chunk stream id
-
-        - timestamp (delta)
-        - message (body) size
-        - message type id
-
-    • body:
-        - Control type (sometimes inter-frames/disposable frames e.g. 0x22/0x32 / 0x22 (MP3 control type))
-        - Video data (sometimes FLV data e.g Sorenson H.263/ MP3)
-
-
-Calculating timestamp delta:
---------------------------
-
-Roughly get the time the previous packet was sent at (in seconds) to 3 decimal places.
-Get the time at which the new packet has been completely assembled and ready to send with a similar accuracy.
-Take away the latest from the earlier and times the answer by 1000 to return our timestamp delta roughly.
 """
 
 import logging
 
-from qrtmp.consts.packets import types
+from qrtmp.consts.formats import types
 
 # TODO: RECORD HEADER:
 #       Possibly remove use of dictionary and since this will increase memory size, since we only
@@ -299,7 +124,7 @@ class Header(object):
     # 'format', 'channel_id'
     __slots__ = ('chunk_type', 'chunk_stream_id', 'timestamp',
                  'body_length', 'data_type', 'stream_id', 'extended_timestamp',
-                 'timestamp_absolute', 'timestamp_delta')
+                 'timestamp_delta')  # 'timestamp_absolute',
 
     def __init__(self, chunk_stream_id, timestamp=-1, body_length=-1, data_type=-1, stream_id=-1):
         """
@@ -337,7 +162,7 @@ class Header(object):
 
         # TODO: Should we have a descriptor for the type of timestamp e.g. absolute or delta?
         # TODO: Added notice attribute to show if the timestamp received is an absolute.
-        self.timestamp_absolute = False  # Non-manual - monitored.
+        # self.timestamp_absolute = False  # Non-manual - monitored.
 
         # TODO: Added notice attribute to show if the timestamp received is a delta.
         self.timestamp_delta = False  # Non-manual - monitored.
@@ -440,7 +265,7 @@ class Header(object):
 #
 #         NOTE: Mainly for encoding.
 #
-#         NOTE: By comparing the size we need to encode the header, we can reduce overhead in packets by only
+#         NOTE: By comparing the size we need to encode the header, we can reduce overhead in formats by only
 #               the necessary parts of the packet.
 #
 #         :param old_header: L{RtmpHeader}
@@ -634,7 +459,7 @@ class Header(object):
 #                 # log.info('Header encoded: %s' % header)
 #                 # TODO: Verify at encode_header end-point that a True was returned from encoding the header.
 #                 # print('Header encoded: %s' % repr(header))
-
+#
 
 # TODO: This should be based on each header we decode. We need to create encoding rules as well.
 # TODO: This does not function to it's full - it just keep on returning 0xc0 due to the same header being re-used.
@@ -644,7 +469,7 @@ def get_size_mask(old_header, new_header):
     Returns the number of bytes needed to encode the header based on the differences between the two.
     NOTE: Both headers must be from the same chunk stream in order for this to work.
 
-    NOTE: By comparing the size we need to encode the header, we can reduce overhead in packets by only
+    NOTE: By comparing the size we need to encode the header, we can reduce overhead in formats by only
           the necessary parts of the packet.
 
     @type old_header: L{Header}
@@ -685,8 +510,9 @@ def get_size_mask(old_header, new_header):
     return 0x40  # 64
 
 
+# TODO: The rtmp_stream object is not provided into this properly, so it becomes a NoneType.
 # TODO: Can we not connect this up to the Header class?
-def encode(stream, header, previous=None):
+def encode(rtmp_stream, header, previous=None):
     """
     Encodes an RTMP header to C{stream}.
 
@@ -711,8 +537,8 @@ def encode(stream, header, previous=None):
     NOTE: When we use the previous header from the previous parameter, this is only to be used to
           to compare messages in which it's body has been split into chunks.
 
-    @param stream: The stream to write the encoded header.
-    @type stream: L{util.BufferedByteStream}.
+    @param rtmp_stream: The stream to write the encoded header.
+    @type rtmp_stream: L{util.BufferedByteStream}.
     @param header: The L{Header} to encode.
     @param previous: The previous header (if any).
     """
@@ -731,16 +557,16 @@ def encode(stream, header, previous=None):
     # print('Previous header: %r HEADER TYPE: %s CHANNEL ID: %s' % (previous, mask, chunk_stream_id))
 
     if chunk_stream_id < 64:  # <= 63
-        stream.write_uchar(mask | chunk_stream_id)
+        rtmp_stream.write_uchar(mask | chunk_stream_id)
     elif chunk_stream_id < 320:  # <=319
-        stream.write_uchar(mask)
-        stream.write_uchar(chunk_stream_id - 64)
+        rtmp_stream.write_uchar(mask)
+        rtmp_stream.write_uchar(chunk_stream_id - 64)
     else:
         chunk_stream_id -= 64
 
-        stream.write_uchar(mask + 1)
-        stream.write_uchar(chunk_stream_id & 0xff)
-        stream.write_uchar(chunk_stream_id >> 0x08)
+        rtmp_stream.write_uchar(mask + 1)
+        rtmp_stream.write_uchar(chunk_stream_id & 0xff)
+        rtmp_stream.write_uchar(chunk_stream_id >> 0x08)
 
     # TODO: We should not be encoding depending on sections, we need to decode based on format - branching.
     # This is a Type 3 (0xC0) header, we do not need to write the stream id, message size or
@@ -761,10 +587,10 @@ def encode(stream, header, previous=None):
             # NOTE: If the timestamp delta is greater than or equal to the value 16777215,
             #       then we need to extend the timestamp with another field at the end of the header.
             if header.timestamp >= 0xffffff:
-                stream.write_24bit_uint(0xffffff)
+                rtmp_stream.write_24bit_uint(0xffffff)
             else:
                 # Otherwise write the timestamp delta.
-                stream.write_24bit_uint(header.timestamp)
+                rtmp_stream.write_24bit_uint(header.timestamp)
 
             # Set to state that we sent a timestamp delta,
             header.timestamp_delta = True
@@ -784,16 +610,16 @@ def encode(stream, header, previous=None):
             # Write the timestamp delta.
             # NOTE: See above branch for mask type 0x80.
             if header.timestamp >= 0xffffff:
-                stream.write_24bit_uint(0xffffff)
+                rtmp_stream.write_24bit_uint(0xffffff)
             else:
                 # Otherwise write the timestamp delta.
-                stream.write_24bit_uint(header.timestamp)
+                rtmp_stream.write_24bit_uint(header.timestamp)
 
             # Write the body length.
-            stream.write_24bit_uint(header.body_length)  # message length
+            rtmp_stream.write_24bit_uint(header.body_length)  # message length
 
             # Write the data type.
-            stream.write_uchar(header.data_type)  # message type id
+            rtmp_stream.write_uchar(header.data_type)  # message type id
 
             # Set to state that we are sending a timestamp delta.
             header.timestamp_delta = True
@@ -813,24 +639,24 @@ def encode(stream, header, previous=None):
             # Write the absolute timestamp.
             # NOTE: See above branch for mask type 0x80.
             if header.timestamp >= 0xffffff:
-                stream.write_24bit_uint(0xffffff)
+                rtmp_stream.write_24bit_uint(0xffffff)
             else:
                 # Otherwise write the timestamp delta.
-                stream.write_24bit_uint(header.timestamp)
+                rtmp_stream.write_24bit_uint(header.timestamp)
 
             # Write the body length.
-            stream.write_24bit_uint(header.body_length)  # message length
+            rtmp_stream.write_24bit_uint(header.body_length)  # message length
 
             # Write the data type.
-            stream.write_uchar(header.data_type)  # message type id
+            rtmp_stream.write_uchar(header.data_type)  # message type id
 
             # Write the stream id.
-            stream.endian = '<'
-            stream.write_ulong(header.stream_id)
-            stream.endian = '!'
+            rtmp_stream.endian = '<'
+            rtmp_stream.write_ulong(header.stream_id)
+            rtmp_stream.endian = '!'
 
             # Set to state that we are sending an absolute timestamp.
-            header.timestamp_absolute = True
+            # header.timestamp_absolute = True
 
             # TODO: Added format information in rtmp_header.encode.
             # Set header format to Type 0.
@@ -843,7 +669,7 @@ def encode(stream, header, previous=None):
 
         if header.timestamp >= 0xffffff:
             # Write the extended timestamp.
-            stream.write_ulong(header.timestamp)
+            rtmp_stream.write_ulong(header.timestamp)
 
             # TODO: Should the extended timestamp be a boolean value?
             header.extended_timestamp = header.timestamp
@@ -855,9 +681,9 @@ def encode(stream, header, previous=None):
     # print('Header encoded: %s' % repr(header))
 
 
-# TODO: Read issue where some packets are missing - this maybe due to a format of 3 (type 3) header arrival.
+# TODO: Read issue where some formats are missing - this maybe due to a format of 3 (type 3) header arrival.
 # TODO: Can we not connect this up to the Header class?
-def decode(stream):
+def decode(rtmp_stream):
     """
     Reads a header from the incoming stream.
 
@@ -869,7 +695,7 @@ def decode(stream):
     @rtype: L{Header}
     """
     # Read header type and chunk stream Id.
-    chunk_stream_id = stream.read_uchar()
+    chunk_stream_id = rtmp_stream.read_uchar()
     # header_format = chunk_stream_id >> 6
     header_type = chunk_stream_id >> 6
     # Set the channel mask.
@@ -879,11 +705,11 @@ def decode(stream):
 
     # We need one more byte.
     if chunk_stream_id is 0:
-        chunk_stream_id = stream.read_uchar() + 64
+        chunk_stream_id = rtmp_stream.read_uchar() + 64
 
     # We need two more bytes.
     if chunk_stream_id is 1:
-        chunk_stream_id = stream.read_uchar() + 64 + (stream.read_uchar() << 8)
+        chunk_stream_id = rtmp_stream.read_uchar() + 64 + (rtmp_stream.read_uchar() << 8)
 
     # Initialise a header object and set it up with the channelId.
     header = Header(chunk_stream_id)
@@ -967,7 +793,7 @@ def decode(stream):
 
         if header.chunk_type == types.TYPE_2_SAME_LENGTH_AND_STREAM:
             # Only the timestamp delta is present in this.
-            header.timestamp = stream.read_24bit_uint()
+            header.timestamp = rtmp_stream.read_24bit_uint()
 
             # Set to state that the timestamp received was a delta.
             header.timestamp_delta = True
@@ -981,13 +807,13 @@ def decode(stream):
             # when the first type 0 header was sent.
 
             # Read the timestamp delta.
-            header.timestamp = stream.read_24bit_uint()
+            header.timestamp = rtmp_stream.read_24bit_rtmp_uint()
 
             # Read the body length.
-            header.body_length = stream.read_24bit_uint()
+            header.body_length = rtmp_stream.read_24bit_uint()
 
             # Read the data type (message types).
-            header.data_type = stream.read_uchar()
+            header.data_type = rtmp_stream.read_uchar()
 
             # TODO: Make sure we get the previous headers stream id.
 
@@ -998,27 +824,27 @@ def decode(stream):
             # This has all the fields present in its header.
 
             # Read the absolute timestamp.
-            header.timestamp = stream.read_24bit_uint()
+            header.timestamp = rtmp_stream.read_24bit_uint()
 
             # Read the body length.
-            header.body_length = stream.read_24bit_uint()
+            header.body_length = rtmp_stream.read_24bit_uint()
 
             # Read the data type (message types).
-            header.data_type = stream.read_uchar()
+            header.data_type = rtmp_stream.read_uchar()
 
             # Read the little endian stream id.
-            stream.endian = '<'
-            header.stream_id = stream.read_ulong()
-            stream.endian = '!'
+            rtmp_stream.endian = '<'
+            header.stream_id = rtmp_stream.read_ulong()
+            rtmp_stream.endian = '!'
 
             # Set to state that the timestamp received was an absolute.
-            header.timestamp_absolute = True
+            # header.timestamp_absolute = True
 
         # If the timestamp (absolute or delta) we read was greater than or equal to
         # the value 16777215, we can read the extended timestamp field to get the full timestamp.
         if header.timestamp == 0xffffff:
             # TODO: Should the extended timestamp be a boolean value?
-            header.extended_timestamp = stream.read_ulong()
+            header.extended_timestamp = rtmp_stream.read_ulong()
         else:
             header.extended_timestamp = None
 
