@@ -18,6 +18,8 @@ from qrtmp.io import rtmp_reader, rtmp_writer
 class BaseConnection:
     """ The base connection class to handle the underlying socket connection to an RTMP server. """
 
+    _socket_module = socket
+
     _socket_object = None
     _socket_file = None
 

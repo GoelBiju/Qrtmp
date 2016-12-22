@@ -1,3 +1,4 @@
+import time
 # import logging
 import struct
 
@@ -15,7 +16,7 @@ class NetConnection(BaseConnection):
     The base of the RTMP connection, NetConnection allows RTMP communication
     between the client and server.
 
-    @inherits: qrtmp.base.base_connection.BaseConnection
+    :inherits: qrtmp.base.base_connection.BaseConnection
     """
     # Setup the basic RTMP parameters required to connect.
     _app = None
@@ -67,6 +68,8 @@ class NetConnection(BaseConnection):
         """
         self._set_base_parameters(base_ip=ip_address, base_port=connection_port, base_proxy=proxy_address)
 
+    # TODO: Set flashVer and fpad to 'None' otherwise a Null value might cause the server to
+    #       reject the connection request.
     def set_rtmp_parameters(self, app, **kwargs):
         """
         Allow the RTMP basic parameters to be set.
@@ -89,14 +92,15 @@ class NetConnection(BaseConnection):
         self._app = app
 
         # These are the basic parameters which should be provided if they exist.
-        self._swf_url = kwargs.get('swf_url')
-        self._tc_url = kwargs.get('tc_url')
-        self._page_url = kwargs.get('page_url')
-        self._fpad = kwargs.get('fpad')
+        self._swf_url = kwargs.get('swf_url', 'None')
+        self._tc_url = kwargs.get('tc_url', 'None')
+        self._page_url = kwargs.get('page_url', 'None')
+        self._fpad = kwargs.get('fpad', 'None')
 
         # NOTE: These can be freely changed before calling connect().
-        self.flash_ver = kwargs.get('flash_ver')
+        self.flash_ver = kwargs.get('flash_ver', 'None')
         self.capabilities = kwargs.get('capabilities', 239.0)
+        # TODO: Should the audio and video codecs always be these values or do they change?
         self.audio_codecs = kwargs.get('audio_codecs', 3575.0)
         self.video_codecs = kwargs.get('video_codecs', 252.0)
         self.video_function = kwargs.get('video_function', 1.0)
@@ -198,6 +202,8 @@ class NetConnection(BaseConnection):
 
             # Call the NetConnection messages function to be initialised to be used.
             self.initialise_net_connection_messages()
+
+            return True
         else:
             print('The BaseConnection was not successful:', base_connect)
 
@@ -220,6 +226,8 @@ class NetConnection(BaseConnection):
         except TypeError:
             print('Handle messages can only be True/False.')
 
+    # TODO: We need to say if read_packet returned None, otherwise we have a NoneType received_packet which can cause
+    #       issues in other code further.
     def read_packet(self):
         """
         Abstracts the process of decoding the data and then generating an RtmpPacket using the decoded header and body.
@@ -229,18 +237,19 @@ class NetConnection(BaseConnection):
         # TODO: Should _rtmp_stream be accessed directly?
         if not self._rtmp_stream.at_eof():
             decoded_header, decoded_body = self.rtmp_reader.decode_rtmp_stream()
-            print(decoded_header, decoded_body)
 
             received_packet = self.rtmp_reader.generate_packet(decoded_header, decoded_body)
 
-            # Handle default RTMP messages automatically.
-            if self.handle_messages:
-                handled_state = self.handle_packet(received_packet)
-                if handled_state is True:
-                    received_packet.handled = True
+            if received_packet is not None:
+                # Handle default RTMP messages automatically.
+                if self.handle_messages:
+                    handled_state = self.handle_packet(received_packet)
+                    if handled_state is True:
+                        received_packet.handled = True
 
-            print(received_packet)
-            return received_packet
+                return received_packet
+            else:
+                print('No packet was read from the stream.')
         else:
             raise StopIteration
 
@@ -278,6 +287,7 @@ class NetConnection(BaseConnection):
 
             assert 0 < received_packet.body['chunk_size'] <= 65536, received_packet.body
 
+            print('New chunk size received.')
             new_chunk_size = received_packet.body['chunk_size']
 
             # Set RtmpReader chunk size to the new chunk size received.
@@ -321,3 +331,14 @@ class NetConnection(BaseConnection):
     #     if shared_object not in self._shared_objects:
     #         shared_object.use(self.rtmp_reader, self.rtmp_writer)
     #         self._shared_objects.append(shared_object)
+
+    def disconnect(self):
+        """
+
+        """
+        try:
+            # TODO: We may need to pass socket.SHUT_RDWR for it work.
+            self._socket_object.shutdown(self._socket_module.SHUT_RDWR)
+            self._socket_object.close()
+        except self._socket_module.error as socket_error:
+            print('Socket Error: {0}'.format(socket_error))

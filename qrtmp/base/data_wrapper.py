@@ -1,6 +1,8 @@
 import pyamf
 import pyamf.util.pure
 
+# TODO: Place pyamf somewhere else so we can access the ASObjects variable (in a more central location).
+
 
 class SocketDataTypeMixInFile(pyamf.util.pure.DataTypeMixIn):
     """
