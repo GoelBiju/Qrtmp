@@ -6,51 +6,46 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from qrtmp.consts.formats import rtmp_packet
-from qrtmp.consts.formats import rtmp_header
-from qrtmp.consts.formats import types
+from qrtmp.core.structures import rtmp_header
+from qrtmp.core.structures import packet
+from qrtmp.util import types
 
 log = logging.getLogger(__name__)
+
+# TODO: write.flush() should be called automatically after the packet has been sent.
 
 
 class RtmpWriter:
     """ This class writes RTMP messages into a stream. """
 
-    def __init__(self, rtmp_stream):
+    # Default write chunk size.
+    chunk_size = 128
+
+    # TODO: Make use of the chunk streams we are using to put RTMP rules into effect.
+    #       I.e. At start of chunk stream we send a full header chunk type.
+    # Let us monitor which chunk streams are active.
+    # _net_connection_chunk_streams = []
+    # _net_stream_chunk_streams = []
+
+    def __init__(self, stream):
         """
         Initialize the RTMP writer and set it to write into the specified stream.
         Set up a default RtmpPacket to use along with it's PyAMF Buffered Byte Stream body.
-
-        :param rtmp_stream:
+        :param stream:
         """
-        self._rtmp_stream = rtmp_stream
+        self.stream = stream
 
         # TODO: Absolute timestamp and timestamp delta calculation.
         # self._timestamp = None
 
-        # Default write chunk size at the beginning of the RTMP stream.
-        self.chunk_size = 128
-
-        # TODO: Make use of the chunk streams we are using to put RTMP rules into effect.
-        #       I.e. At start of chunk stream we send a full header chunk type.
-        # Let us monitor which chunk streams are active.
-        # _net_connection_chunk_streams = []
-        # _net_stream_chunk_streams = []
-
-        self.transaction_id = 0
-
-    def stream_flush(self):
+    def flush(self):
         """ Flush the underlying stream. """
-        self._rtmp_stream.flush()
+        self.stream.flush()
 
     @staticmethod
     def new_packet():
-        """
-        A connective method to return an invalid and empty RtmpPacket.
-
-        :return rtmp_packet.RtmpPacket: object
-        """
-        return rtmp_packet.RtmpPacket()
+        """ A connective method to return an invalid and empty RtmpPacket. """
+        return packet.RtmpPacket()
 
     # def get_working_channel(self):
     #     """
@@ -66,23 +61,24 @@ class RtmpWriter:
 
     # TODO: Maybe 'setup_packet' could be a function of the RtmpPacket class - '.setup()'.
     # TODO: MAJOR ISSUE HERE - Implement rules and handle whether we use both the message and RtmpPacket.
-    # TODO: Allow us to create custom formats in here and then send it off via send_msg which
+    # TODO: Allow us to create custom packets in here and then send it off via send_msg which
     #       handles the packet contents.
     # TODO: Allow RtmpPacket entry.
     # TODO: Overriding 'csid' should not be a parameter - only temporary.
     # TODO: We need move the encoding and writing to body aspect to another function.
-    def setup_packet(self, write_packet):
+    def setup_packet(self, write_packet, override_csid=None):
         """
         Setup an RtmpPacket with specified parameters to encode/write into the RTMP stream.
 
-        :param write_packet: RtmpPacket object
+        :param write_packet: RtmpPacket
+        :param override_csid:
         """
         # Set up a default RtmpPacket to use along with it's PyAMF Buffered Byte-stream body.
         # If a preset packet is already provided we can just process that without creating a new one;
-        # the data-type must be specified in the packet header and the body SHOULD NOT contain any data already
+        # the datatype must be specified in the packet header and the body SHOULD NOT contain any data already
         # (any data present will be overwritten by the initialisation of the PyAMF Buffered Bytestream.
 
-        # TODO: Will we need this check if the formats being sent are only sent via RtmpPackets?
+        # TODO: Will we need this check if the packets being sent are only sent via RtmpPackets?
         # TODO: AMF is only required on RTMP Command channel messages.
         # Set up the encoder and body buffer which is to be assigned to
         # the RtmpPacket once data has been written into it.
@@ -93,7 +89,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.SET_CHUNK_SIZE
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
             write_packet.header.stream_id = 0
 
             # Set up the body content.
@@ -109,7 +106,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.ACKNOWLEDGEMENT
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
             write_packet.header.stream_id = 0
 
             # Set up the body content.
@@ -125,7 +123,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.ABORT
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
             write_packet.header.stream_id = 0
 
             # Set up the body content.
@@ -141,7 +140,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.USER_CONTROL_MESSAGE
 
             # Set up the basic header information.
-            write_packet.header.stream_id = types.RTMP_CONTROL_CHANNEL
+            if override_csid is None:
+                write_packet.header.stream_id = types.RTMP_CONTROL_CHANNEL
             write_packet.header.stream_id = 0
 
             # Set up the body content.
@@ -161,7 +161,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.WINDOW_ACKNOWLEDGEMENT_SIZE
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
             write_packet.header.stream_id = 0
 
             # Set up the body content.
@@ -177,7 +178,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.WINDOW_ACKNOWLEDGEMENT_SIZE
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
             write_packet.header.stream_id = 0
 
             # Set up the body content.
@@ -194,8 +196,8 @@ class RtmpWriter:
             # TODO: Testing header information for now.
             # Set up the basic header information.
             # TODO: Connect to NetStream chunk stream id attribute?
-            write_packet.header.chunk_stream_id = types.RTMP_CUSTOM_AUDIO_CHANNEL
-
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CUSTOM_AUDIO_CHANNEL
             # TODO: Connect to NetStream stream id attribute?
             write_packet.header.stream_id = 1
 
@@ -213,8 +215,8 @@ class RtmpWriter:
             # TODO: Testing header information for now.
             # Set up the basic header information.
             # TODO: Connect to NetStream chunk stream id attribute?
-            write_packet.header.chunk_stream_id = types.RTMP_CUSTOM_VIDEO_CHANNEL
-
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CUSTOM_VIDEO_CHANNEL
             # TODO: Connect to NetStream stream id attribute?
             write_packet.header.stream_id = 1
 
@@ -232,7 +234,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.COMMAND_AMF0
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL
 
             # Set up the body content.
             encoder = pyamf.amf3.Encoder(packet_body_buffer)
@@ -260,23 +263,11 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.DATA_AMF0
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL
 
-            encoder = pyamf.amf0.Encoder(packet_body_buffer)
             # Set up the body content.
-            encoder.writeElement(write_packet.body['onMetaData'])
-            """
-            ('Packet:', {'data_content': [
-                {'videoframerate': 24, 'moovposition': 8671904, 'avclevel': 30, 'avcprofile': 66,
-                 'audiosamplerate': 12000, 'audiocodecid': u'mp4a', 'framerate': 24, 'height': 160, 'width': 240,
-                 'displayWidth': 240, 'audiochannels': 2, 'frameHeight': 160, 'frameWidth': 240, 'duration': 596.48,
-                 'displayHeight': 160, 'aacaot': 2, 'videocodecid': u'avc1', 'trackinfo': [
-                    {'length': 14315, 'language': u'eng', 'timescale': 24,
-                     'sampledescription': [{'sampletype': u'avc1'}]},
-                    {'length': 7157760, 'language': u'eng', 'timescale': 12000,
-                     'sampledescription': [{'sampletype': u'mp4a'}]}]}], 'data_name': u'onMetaData'})
-            """
-            encoder.writeMixedArray(write_packet.body['metadata'])
+            packet_body_buffer.write(write_packet.body['metadata'])
 
             # Assign the buffered bytestream body value into the RtmpPacket;
             # freeing the body before-hand.
@@ -286,7 +277,8 @@ class RtmpWriter:
         elif write_packet.header.data_type == types.DT_SHARED_OBJECT:
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_CONTROL_CHANNEL
 
             # Set up the body content.
             encoder = pyamf.amf0.Encoder(packet_body_buffer)
@@ -313,7 +305,8 @@ class RtmpWriter:
             #       RtmpHeader.MessageType.COMMAND_AMF0
 
             # Set up the basic header information.
-            write_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL
+            if override_csid is None:
+                write_packet.header.chunk_stream_id = types.RTMP_COMMAND_CHANNEL
 
             # Set up the body content.
             encoder = pyamf.amf0.Encoder(packet_body_buffer)
@@ -325,7 +318,8 @@ class RtmpWriter:
             encoder.writeElement(write_packet.body['command_name'])
             encoder.writeElement(write_packet.body['transaction_id'])
             # TODO: Iteration over the command object would be an issue here (in the event of the connection packet,
-            #       maybe we should handle all formats and assume the command object is going to be used anyhow).
+            #       maybe we should handle all packets and assume the command object is going to be used anyhow).
+            # encoder.writeElement(write_packet.body['command_object'])
             command_object = write_packet.body['command_object']
             if type(command_object) is list:
                 for command_info in command_object:
@@ -356,16 +350,15 @@ class RtmpWriter:
         # Send the packet we have generated.
         self.send_packet(write_packet)
 
-        # TODO: write.flush() should be called automatically after the packet has been sent.
         # Flush file-object.
-        self.stream_flush()
+        self.flush()
 
     @staticmethod
     def write_shared_object_event(event, body_stream):
         """
 
-        :param event: dict
-        :param body_stream: PyAMF BufferedByteStream object
+        :param event:
+        :param body_stream:
         """
         inner_stream = pyamf.util.BufferedByteStream()
         encoder = pyamf.amf0.Encoder(inner_stream)
@@ -484,24 +477,23 @@ class RtmpWriter:
         #                   be able to set the header chunk type/format manually?
 
         # Encode the initial header before the main RTMP message.
-        rtmp_header.encode(self._rtmp_stream, send_packet.header)
+        rtmp_header.encode(self.stream, send_packet.header)
 
-        # TODO: We need to chunk all formats message bodies, however we need to put into perspective
+        # TODO: We need to chunk all packets message bodies, however we need to put into perspective
         #       whether message that are to be sent are related to one another and what format it needs to be.
 
         # Write chunks into the stream (message body split up with the same header).
         for i in xrange(0, len(send_packet.body), self.chunk_size):
             write_size = i + self.chunk_size
             chunk = send_packet.body[i:write_size]
-            self._rtmp_stream.write(chunk)
+            self.stream.write(chunk)
 
             # TODO: Why is the previous in the header encode always 0?
             # We keep on encoding a header for each part of the packet body we send, until it is equal to
             # or exceeds the length of the packet body.
             if write_size < len(send_packet.body):
                 # We provide the previous packet we encoded to provide context into what we are sending.
-                # TODO: The rtmp_stream is None when entering here.
-                rtmp_header.encode(self._rtmp_stream, send_packet.header, send_packet.header)
+                rtmp_header.encode(self.stream, send_packet.header, send_packet.header)
 
         # TODO: Moved to now using the RtmpPacket body as the PyAMF buffered bytestream, do we need a separate
         #       variable for this, and if so, do we need to have a reset body function to reset the body?
@@ -515,7 +507,6 @@ class FlashSharedObject:
     def __init__(self, name):
         """
         Initialize a new Flash Remote SO with a given name and empty data.
-
         NOTE: The data regarding the shared object is located inside the self.data dictionary.
         """
         self.name = name
@@ -527,7 +518,6 @@ class FlashSharedObject:
         """
         Initialize usage of the SO by contacting the Flash Media Server.
         Any remote changes to the SO should be now propagated to the client.
-
         :param writer:
         """
         self.use_success = False
@@ -569,7 +559,6 @@ class FlashSharedObject:
         """
         Handle an incoming RTMP message. Check if it is of any relevance for the
         specific SO and process it, otherwise ignore it.
-
         :param message:
         """
         if message['data_type'] == types.DT_SHARED_OBJECT and message['obj_name'] == self.name:
@@ -589,7 +578,6 @@ class FlashSharedObject:
     def handle_events(self, events):
         """
         Handle SO events that target the specific SO.
-
         :param events:
         """
         for event in events:
@@ -614,7 +602,6 @@ class FlashSharedObject:
     def on_change(key):
         """
         Handle change events for the specific shared object.
-
         :param key:
         """
         pass
@@ -622,8 +609,7 @@ class FlashSharedObject:
     @staticmethod
     def on_delete(key):
         """
-        Handle delete events for the specific shared object.
-
+        Handle delete events for the specific shared object. "
         :param key:
         """
         pass
@@ -632,7 +618,6 @@ class FlashSharedObject:
     def on_message(data):
         """
         Handle message events for the specific shared object.
-
         :param data:
         """
         pass

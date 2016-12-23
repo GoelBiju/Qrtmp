@@ -8,9 +8,11 @@ from qrtmp.base.base_connection import BaseConnection
 from qrtmp.consts.formats import types
 from qrtmp.io.net_connection import messages
 
+# TODO: If we don't reload the class, the same class variables will be used in new code if we try
+#       to initialise it again.
+
 
 # TODO: We should make it clear if we are talking about packets or messages.
-
 class NetConnection(BaseConnection):
     """
     The base of the RTMP connection, NetConnection allows RTMP communication
@@ -18,6 +20,12 @@ class NetConnection(BaseConnection):
 
     :inherits: qrtmp.base.base_connection.BaseConnection
     """
+    # TODO: Will we need these variables?
+    # Parameter access variables.
+    _stored_rtmp_server = False
+    _stored_rtmp_parameters = False
+    _stored_extra_rtmp_parameters = False
+
     # Setup the basic RTMP parameters required to connect.
     _app = None
 
@@ -39,8 +47,8 @@ class NetConnection(BaseConnection):
     _extra_rtmp_parameters = []
 
     # Default flash versions for various operating systems:
-    windows_flash_version = 'WIN 23,0,0,162'
-    mac_flash_version = 'MAC 23,0,0,162'
+    windows_flash_version = 'WIN 24,0,0,186'
+    mac_flash_version = 'MAC 24,0,0,186'
     linux_flash_version = 'LNX 11,2,202,635'
 
     # TODO: Find more about shared objects.
@@ -58,6 +66,9 @@ class NetConnection(BaseConnection):
     active_connection = False
     handle_messages = True
 
+    # TODO: Make functions to clear all the important variables before connecting.
+
+    # TODO: Prevent setting the rtmp server, parameters, extra parameters if the connection is being used.
     def set_rtmp_server(self, ip_address, connection_port=1935, proxy_address=None):
         """
         This function serves as the first access point to using the application.
@@ -66,7 +77,29 @@ class NetConnection(BaseConnection):
         :param connection_port: int (default 1935)
         :param proxy_address: str (default boolean None)
         """
-        self._set_base_parameters(base_ip=ip_address, base_port=connection_port, base_proxy=proxy_address)
+        if not self.active_connection:
+            # If the RTMP server has already been stored, then we can reset this.
+            if self._stored_rtmp_server:
+                self.reset_rtmp_server()
+
+            self._set_base_parameters(base_ip=ip_address, base_port=connection_port, base_proxy=proxy_address)
+            self._stored_rtmp_server = True
+        else:
+            print('You cannot modify the RTMP parameters while there is an active connection. Disconnect first.')
+
+    def reset_rtmp_server(self):
+        """
+        Resets the PROXY, IP and PORT variables.
+
+        This function can be called from the outside for a new NetConnection and new server parameters.
+        """
+        self._proxy = None
+
+        self._ip = None
+        self._port = None
+
+        # Reset the RTMP server stored variable.
+        self._stored_rtmp_server = False
 
     # TODO: Set flashVer and fpad to 'None' otherwise a Null value might cause the server to
     #       reject the connection request.
@@ -87,27 +120,61 @@ class NetConnection(BaseConnection):
             - kwarg video_function:
             - kwarg object_encoding:
         """
-        # This is the application name, this is necessary in order for the client
-        # to make use of the RTMP application on the server.
-        self._app = app
+        if not self.active_connection:
+            # Reset the RTMP parameters if they have already been stored.
+            if self._stored_rtmp_parameters:
+                self.reset_rtmp_parameters()
 
-        # These are the basic parameters which should be provided if they exist.
-        self._swf_url = kwargs.get('swf_url', 'None')
-        self._tc_url = kwargs.get('tc_url', 'None')
-        self._page_url = kwargs.get('page_url', 'None')
-        self._fpad = kwargs.get('fpad', 'None')
+            # This is the application name, this is necessary in order for the client
+            # to make use of the RTMP application on the server.
+            self._app = app
 
-        # NOTE: These can be freely changed before calling connect().
-        self.flash_ver = kwargs.get('flash_ver', 'None')
-        self.capabilities = kwargs.get('capabilities', 239.0)
-        # TODO: Should the audio and video codecs always be these values or do they change?
-        self.audio_codecs = kwargs.get('audio_codecs', 3575.0)
-        self.video_codecs = kwargs.get('video_codecs', 252.0)
-        self.video_function = kwargs.get('video_function', 1.0)
-        self.object_encoding = kwargs.get('object_encoding', 0.0)
+            # These are the basic parameters which should be provided if they exist.
+            self._swf_url = kwargs.get('swf_url', 'None')
+            self._tc_url = kwargs.get('tc_url', 'None')
+            self._page_url = kwargs.get('page_url', 'None')
+            self._fpad = kwargs.get('fpad', 'None')
 
-        # self._transaction_id = 0
+            # NOTE: These can be freely changed before calling rtmp_connect().
+            self.flash_ver = kwargs.get('flash_ver', 'None')
+            self.capabilities = kwargs.get('capabilities', 239.0)
+            # TODO: Should the audio and video codecs always be these values or do they change?
+            self.audio_codecs = kwargs.get('audio_codecs', 3575.0)
+            self.video_codecs = kwargs.get('video_codecs', 252.0)
+            self.video_function = kwargs.get('video_function', 1.0)
+            self.object_encoding = kwargs.get('object_encoding', 0.0)
 
+            # Set the stored RTMP parameters as we have stored new parameters.
+            self._stored_rtmp_parameters = True
+        else:
+            print('You cannot modify the RTMP parameters while there is an active connection.')
+
+    def reset_rtmp_parameters(self):
+        """
+        Resets the RTMP parameters variables.
+
+        This function can be called from the outside for a new NetConnection or new RTMP parameters.
+        """
+        self._app = None
+
+        self._swf_url = None
+        self._tc_url = None
+        self._page_url = None
+        self._fpad = None
+
+        self.flash_ver = None
+        self.capabilities = None
+        self.audio_codecs = None
+        self.video_codecs = None
+        self.video_function = None
+        self.object_encoding = None
+
+        # Reset the stored RTMP parameters variable as the parameters have been reset.
+        self._stored_rtmp_parameters = False
+
+    # TODO: Work out the logic here, we do not want to delete what is given into the function.
+    #       At the moment client's cannot add more extra parameters with another call without deleting what is there.
+    # TODO: Issue when calling two NetConnection objects, the extra parameter data of both are used.
     def set_extra_rtmp_parameters(self, *args):
         """
         Allows extra RTMP parameters to be used when connecting to the RTMP application.
@@ -118,10 +185,28 @@ class NetConnection(BaseConnection):
         :return _extra_rtmp_parameters: list all the extra rtmp parameters which are ready to be sent
                                         along in the RTMP connection message.
         """
-        for connection_argument in args:
-            self._extra_rtmp_parameters.append(connection_argument)
+        if not self.active_connection:
+            if len(self._extra_rtmp_parameters) is not 0:
+                self.reset_extra_rtmp_parameters()
 
-        return self._extra_rtmp_parameters
+            for connection_argument in args:
+                self._extra_rtmp_parameters.append(connection_argument)
+
+            self._stored_extra_rtmp_parameters = True
+        else:
+            print('You cannot modify the extra RTMP parameters while there is an active connection.')
+
+    def reset_extra_rtmp_parameters(self):
+        """
+        Resets extra RTMP parameters.
+
+        This function can also be called from the outside in the event a new connection should be made with the same
+        NetConnection object or if you want to store new parameters.
+        """
+        self._extra_rtmp_parameters = []
+
+        # Resets the stored extra RTMP parameters variable as we have reset any stored parameters.
+        self._stored_extra_rtmp_parameters = False
 
     def create_connection_message(self):
         """
@@ -200,10 +285,15 @@ class NetConnection(BaseConnection):
             # Setup the packet and write the message into the RTMP stream.
             self.rtmp_writer.setup_packet(connect_message)
 
-            # Call the NetConnection messages function to be initialised to be used.
+            # Call the NetConnection messages function to be initialised for use by the client.
             self.initialise_net_connection_messages()
 
-            return True
+            # TODO: We should only return true to allow the reading of packets once NetConnection.Success has been
+            #       received from the server.
+            self.active_connection = True
+
+            # Return the state of active connection.
+            return self.active_connection
         else:
             print('The BaseConnection was not successful:', base_connect)
 
@@ -264,30 +354,27 @@ class NetConnection(BaseConnection):
         if received_packet.header.data_type == types.DT_USER_CONTROL and received_packet.body['event_type'] == \
                 types.UC_STREAM_BEGIN:
 
-            # log.debug('Handled STREAM_BEGIN packet: %s' % received_packet.body)
+            # log.info('Handled STREAM_BEGIN packet: %s' % received_packet.body)
             return True
 
         elif received_packet.header.data_type == types.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
-
             assert received_packet.body['window_acknowledgement_size'] == 2500000, received_packet.body
 
             self.messages.send_window_ack_size(received_packet.body)
-            # log.debug('Handled WINDOW_ACK_SIZE packet with response to server.')
+
+            # log.info('Handled WINDOW_ACK_SIZE packet with response to server.')
             return True
 
         elif received_packet.header.data_type == types.DT_SET_PEER_BANDWIDTH:
-
             assert received_packet.body['window_acknowledgement_size'] == 2500000, received_packet.body
             assert received_packet.body['limit_type'] == 2, received_packet.body
 
-            # log.debug('Handled SET_PEER_BANDWIDTH packet: %s' % received_packet.body)
+            # log.info('Handled SET_PEER_BANDWIDTH packet: %s' % received_packet.body)
             return True
 
         elif received_packet.header.data_type == types.DT_SET_CHUNK_SIZE:
-
             assert 0 < received_packet.body['chunk_size'] <= 65536, received_packet.body
 
-            print('New chunk size received.')
             new_chunk_size = received_packet.body['chunk_size']
 
             # Set RtmpReader chunk size to the new chunk size received.
@@ -298,7 +385,7 @@ class NetConnection(BaseConnection):
             self.rtmp_writer.chunk_size = new_chunk_size
             # log.debug('Set RtmpWriter chunk to size to:', self.rtmp_writer.chunk_size)
 
-            # log.debug('Handled SET_CHUNK_SIZE packet with new chunk size: %s' % new_chunk_size)
+            # log.info('Handled SET_CHUNK_SIZE packet with new chunk size received.')
             return True
 
         elif received_packet.header.data_type == types.DT_USER_CONTROL and received_packet.body['event_type'] == \
@@ -307,17 +394,21 @@ class NetConnection(BaseConnection):
             self.messages.send_ping_response(received_packet.body)
             timestamp_unpacked = struct.unpack('>I', received_packet.body['event_data'])
             timestamp = timestamp_unpacked[0]
-            print('Ping request timestamp: ' + str(timestamp))
-            # log.debug('Handled PING_REQUEST packet with response to server.')
+            # log.debug('Received ping request timestamp: %s' % str(timestamp))
+
+            # log.info('Handled PING_REQUEST packet with response to server.')
             return True
 
+        # NOTE: Receiving a PING_RESPONSE User Control RTMP message is unlikely, though some servers may respond with
+        #       with this if we send a PING_REQUEST User Control RTMP message initially.
         elif received_packet.header.data_type == types.DT_USER_CONTROL and received_packet.body['event_type'] == \
                 types.UC_PING_RESPONSE:
 
             unpacked_tpl = struct.unpack('>I', received_packet.body['event_data'])
             unpacked_response = unpacked_tpl[0]
-            print('Ping response timestamp: ' + str(unpacked_response))
-            # log.debug('Server sent PING_RESPONSE: %s' % unpacked_response)
+            # log.debug('Received ping response timestamp: %s' % str(unpacked_response))
+
+            # log.info('Handled PING_RESPONSE from server.')
             return True
 
         else:
@@ -333,9 +424,12 @@ class NetConnection(BaseConnection):
     #         self._shared_objects.append(shared_object)
 
     def disconnect(self):
-        """
+        """ Disconnect from the socket and stops the RTMP connection. """
+        # Reset the connection variables.
+        self.reset_rtmp_server()
+        self.reset_rtmp_parameters()
+        self.reset_extra_rtmp_parameters()
 
-        """
         try:
             # TODO: We may need to pass socket.SHUT_RDWR for it work.
             self._socket_object.shutdown(self._socket_module.SHUT_RDWR)

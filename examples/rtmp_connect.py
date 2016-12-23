@@ -62,7 +62,7 @@ nc.set_rtmp_parameters(app, tc_url=tc_url, swf_url=swf_url, page_url=page_url)
 #   - set our rtmp client to be recognised as running on Windows:
 # connection.flash_ver = connection.windows_flash_version
 
-nc.flash_ver = nc.windows_flash_version
+# nc.flash_ver = nc.windows_flash_version
 
 # 5. Attempt a connection with the server and return a boolean:
 #    stating if we have made a connection or not:
