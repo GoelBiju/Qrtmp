@@ -1,6 +1,8 @@
 """
 Represents an enumeration of the different RTMP message types such as
-data types, shared object event types and user control types.
+data types, shared object event types and user control types (including details of types of data sent/received).
+
+As well as this, it stores the various types of RTMP headers and chunk streams.
 
 The notes in this file originally came from the SimpleRtmp project (https://github.com/faucamp/SimpleRtmp),
 by faucamp, based in the Java programming language. It has only been slightly altered/reworded.
@@ -237,6 +239,18 @@ UC_BUFFER_EMPTY = 0x1F  # 31
 
 UC_BUFFER_READY = 0x20  # 32
 
+# === Default acknowledgement limit types ===
+
+# INFO:
+HARD = 0
+
+# INFO:
+SOFT = 1
+
+# INFO:
+DYNAMIC = 2
+
+
 # === Shared Object types ===
 
 # Shared Object connection
@@ -275,41 +289,45 @@ SO_USE_SUCCESS = 0x0B  # 11
 # TODO: Rename these appropriately.
 # === Header types ===
 
-TYPE_0_FULL = 0x00
+# A header type of 0 (0x00) allows all the information about the RTMP message to be sent.
+# The message includes the absolute timestamp, the body length, the message data type and the message stream id.
+HEADER_TYPE_0_FULL = 0x00
 
-TYPE_1_SAME_STREAM = 0x01
+# A header type of 1 (0x01) allows all information except for the stream id (with the timestamp being the delta -
+# difference between the last RTMP message being sent and this one), so the message would be assumed to be received on
+# the same stream as the message which started it.
+HEADER_TYPE_1_SAME_STREAM = 0x01
 
-TYPE_2_SAME_LENGTH_AND_STREAM = 0x02
+# TODO Incomplete.
+# A header type of 2 (0x02) allows an RTMP message with the same size and for the same stream as the one before it
+# to be sent. So the message would only contain a timestamp delta
+HEADER_TYPE_2_SAME_LENGTH_AND_STREAM = 0x02
 
-TYPE_3_CONTINUATION = 0x03
+# A header type of 3 (0x03) allows a continuation of the previous RTMP message if the original message's body length
+# was greater than the chunk size. So the message can be split into several chunks which can be sent with the same
+# information as the first message. In this case we only write the message body into the stream and not anymore
+# header's after the first.
+HEADER_TYPE_3_CONTINUATION = 0x03
 
-# === Default channels ===
+# TODO: stream id's and channels are mixed here.
 
-# INFO:
-RTMP_CONNECTION_CHANNEL = 0x00
+# === Default chunk streams ===
 
-# INFO:
-RTMP_CONTROL_CHANNEL = 0x02
+# INFO: The control chunk stream is for sending User Control RTMP messages upon.
+RTMP_CONTROL_CHUNK_STREAM = 0x02
 
-# INFO:
-RTMP_COMMAND_CHANNEL = 0x03
+# INFO: The connection chunk stream is for sending any normal NetConnection RTMP messages.
+RTMP_CONNECTION_CHUNK_STREAM = 0x03
 
-# INFO:
-RTMP_CUSTOM_AUDIO_CHANNEL = 0x06  # 0x04
+# INFO: The stream channel is for sending NetStream related RTMP messages.
+RTMP_STREAM_CHUNK_STREAM = 0x08
 
-# INFO:
-RTMP_CUSTOM_VIDEO_CHANNEL = 0x07  # 0x06
+# INFO: The custom audio chunk stream is a dedicated chunk stream in which audio RTMP messages can be sent on.
+#       This can vary at times and is not the same chunk stream for the video messages, though the audio message
+#       stream id should be the same as the video messages stream id.
+RTMP_CUSTOM_AUDIO_CHUNK_STREAM = 0x06  # 0x04
 
-# INFO:
-RTMP_STREAM_CHANNEL = 0x08
-
-# === Default acknowledgement limit types ===
-
-# INFO:
-HARD = 0
-
-# INFO:
-SOFT = 1
-
-# INFO:
-DYNAMIC = 2
+# INFO: The custom video chunk stream is a dedicated chunk stream in which video RTMP messages can be sent on.
+#       This can vary at times and is not the same chunk stream for audio messages, though the video messages
+#       stream id should be the same as the audio messages stream id.
+RTMP_CUSTOM_VIDEO_CHUNK_STREAM = 0x07  # 0x06

@@ -15,10 +15,10 @@ import logging
 import pyamf
 import pyamf.amf0
 import pyamf.amf3
+from qrtmp.formats import rtmp_header
+from qrtmp.formats import types
 
-from qrtmp.consts.formats import rtmp_packet
-from qrtmp.consts.formats import rtmp_header
-from qrtmp.consts.formats import types
+from qrtmp.formats import rtmp_packet
 
 log = logging.getLogger(__name__)
 
@@ -47,26 +47,6 @@ class RtmpReader:
 
     # # TODO: Not properly decoding headers may result in the loop decoding here until a restart.
     # # TODO: Read packet and the actual decoding of the packet should be in two different sections.
-    # def read_packet(self):
-    #     """
-    #     Abstracts the process of decoding the data and then generating an RtmpPacket.
-    #     :return: RtmpPacket (with header and body).
-    #     """
-    #     if not self.stream.at_eof():
-    #         decoded_header, decoded_body = self.decode_stream()
-    #         # print('Decoding next header and body ...')
-    #         # print(decoded_header, decoded_body)
-    #         # print('Generating next RtmpPacket ....')
-    #         rtmp_packet = self.generate_packet(decoded_header, decoded_body)
-    #
-    #         # Handle default packet messages.
-    #         if self.handle_default_messages:
-    #
-    #         print(rtmp_packet)
-    #         return rtmp_packet
-    #     else:
-    #         # TODO: Is this the right raise error to call?
-    #         raise StopIteration
 
     def decode_rtmp_stream(self):
         """
@@ -80,10 +60,10 @@ class RtmpReader:
         msg_body_len = 0
 
         decoded_header = rtmp_header.decode(self._rtmp_stream)
-        decoded_body = pyamf.util.BufferedByteStream('')
+        decoded_body = pyamf.util.BufferedByteStream()
 
         log.debug('read_packet() header %s' % decoded_header)
-        # print('Decoded header: %s' % decoded_header)
+        print('Decoded header: %s' % decoded_header)
 
         # TODO: Work out how the 'previous_header' really functions.
         # if decoded_header.data_type == -1:
@@ -399,5 +379,9 @@ class RtmpReader:
             assert None, received_packet
 
         log.debug('Generated RtmpPacket: %r' % repr(received_packet))
+
+        # Store the decoded body we received as the body buffer in the packet.
+        # received_packet.body_buffer = decoded_body.read()
+
         # print('[Read] %s' % repr(received_packet))
         return received_packet

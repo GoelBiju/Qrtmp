@@ -2,11 +2,46 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="73870e9b-aabb-40d5-b312-15a1843a5130" name="Default" comment="">
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/handshake.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/header_information" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_header.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_packet.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/types.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/packet.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/packet_types/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/packet_types/types.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/packets/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/packets/packet.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/packets/rtmp_header.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/packets/types.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/rtmp_header.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/consts/types.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/core/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/core/rtmp_reader.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/core/rtmp_writer.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/core/structures/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/core/structures/packet.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/core/structures/rtmp_header.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/rtmp.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/status/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/status/net_connection.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/status/net_stream.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/status/shared_object.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/qrtmp/util/types.py" afterPath="" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/qrtmp/util/status/__init__.py" afterPath="$PROJECT_DIR$/qrtmp/base/status/__init__.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/qrtmp/util/status/net_connection.py" afterPath="$PROJECT_DIR$/qrtmp/base/status/net_connection.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/qrtmp/util/status/net_stream.py" afterPath="$PROJECT_DIR$/qrtmp/base/status/net_stream.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/qrtmp/util/status/shared_object.py" afterPath="$PROJECT_DIR$/qrtmp/base/status/shared_object.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/examples/rtmp_connect.py" afterPath="$PROJECT_DIR$/examples/rtmp_connect.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/others/rtmp.py" afterPath="$PROJECT_DIR$/others/rtmp.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/base/base_connection.py" afterPath="$PROJECT_DIR$/qrtmp/base/base_connection.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/base/net_connection.py" afterPath="$PROJECT_DIR$/qrtmp/base/net_connection.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_header.py" afterPath="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_header.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_packet.py" afterPath="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_packet.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/base/net_stream.py" afterPath="$PROJECT_DIR$/qrtmp/base/net_stream.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/io/net_connection/messages.py" afterPath="$PROJECT_DIR$/qrtmp/io/net_connection/messages.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/io/rtmp_reader.py" afterPath="$PROJECT_DIR$/qrtmp/io/rtmp_reader.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/qrtmp/io/rtmp_writer.py" afterPath="$PROJECT_DIR$/qrtmp/io/rtmp_writer.py" />
     </list>
     <ignored path="Qrtmp.iws" />
@@ -20,7 +55,7 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/Qrtmp$rtmp_packet.coverage" NAME="rtmp_packet Coverage Results" MODIFIED="1482163231045" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/qrtmp/consts/formats" />
-    <SUITE FILE_PATH="coverage/Qrtmp$rtmp_connect.coverage" NAME="rtmp_connect Coverage Results" MODIFIED="1482423922607" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
+    <SUITE FILE_PATH="coverage/Qrtmp$rtmp_connect.coverage" NAME="rtmp_connect Coverage Results" MODIFIED="1482719195666" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
   </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
@@ -38,51 +73,49 @@
     <favorites_list name="Qrtmp" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="net_connection.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/qrtmp/base/net_connection.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="60">
-              <caret line="198" column="0" lean-forward="true" selection-start-line="198" selection-start-column="0" selection-end-line="198" selection-end-column="0" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="base_connection.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/qrtmp/base/base_connection.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="28">
-              <caret line="7" column="0" lean-forward="false" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
-              <folding>
-                <element signature="e#206#219#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="rtmp_header.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/qrtmp/consts/formats/rtmp_header.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="196">
-              <caret line="778" column="56" lean-forward="false" selection-start-line="778" selection-start-column="56" selection-end-line="778" selection-end-column="56" />
-              <folding>
-                <element signature="e#744#758#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
+    <leaf>
       <file leaf-file-name="rtmp_connect.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/examples/rtmp_connect.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="230">
-              <caret line="68" column="41" lean-forward="true" selection-start-line="68" selection-start-column="41" selection-end-line="68" selection-end-column="41" />
+            <state relative-caret-position="272">
+              <caret line="80" column="27" lean-forward="false" selection-start-line="80" selection-start-column="27" selection-end-line="80" selection-end-column="27" />
               <folding>
-                <element signature="e#1508#1524#0" expanded="true" />
+                <element signature="e#1478#1494#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="net_connection.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/qrtmp/base/net_connection.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="163">
+              <caret line="324" column="30" lean-forward="false" selection-start-line="324" selection-start-column="30" selection-end-line="324" selection-end-column="30" />
+              <folding>
+                <element signature="e#107#121#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="rtmp_writer.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/qrtmp/io/rtmp_writer.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="302">
+              <caret line="464" column="37" lean-forward="true" selection-start-line="464" selection-start-column="37" selection-end-line="464" selection-end-column="37" />
+              <folding>
+                <element signature="e#21#33#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="rtmp_header.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/qrtmp/formats/rtmp_header.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="200">
+              <caret line="373" column="54" lean-forward="true" selection-start-line="373" selection-start-column="54" selection-end-line="373" selection-end-column="54" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -101,11 +134,15 @@
       <find>RtmpHeader</find>
       <find>Header</find>
       <find>python</find>
-      <find>pyamf</find>
       <find>stream</find>
       <find>timestamp_absolute</find>
       <find>struct</find>
       <find>print</find>
+      <find>logger</find>
+      <find>handle_messages</find>
+      <find>body_is_so</find>
+      <find>log</find>
+      <find>pyamf</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -114,11 +151,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/../pinybot-stable/pinylib.py" />
-        <option value="$PROJECT_DIR$/requirements.txt" />
-        <option value="$PROJECT_DIR$/qrtmp/util/status/test.py" />
-        <option value="$PROJECT_DIR$/qrtmp/test.py" />
-        <option value="$PROJECT_DIR$/qrtmp/core/rtmp_writer.py" />
         <option value="$PROJECT_DIR$/qrtmp/ftp_download.py" />
         <option value="$PROJECT_DIR$/../../non-Git/stream_capture/piny_capture/pinylib.py" />
         <option value="$PROJECT_DIR$/qrtmp/core/structures/packet.py" />
@@ -151,20 +183,25 @@
         <option value="$PROJECT_DIR$/qrtmp/consts/formats/packet.py" />
         <option value="$PROJECT_DIR$/qrtmp/util/miscellaneous.py" />
         <option value="$PROJECT_DIR$/qrtmp/consts/formats/header_information" />
-        <option value="$PROJECT_DIR$/qrtmp/base/net_stream.py" />
         <option value="$PROJECT_DIR$/qrtmp/io/net_connection/commands.py" />
-        <option value="$PROJECT_DIR$/qrtmp/io/net_connection/messages.py" />
-        <option value="$PROJECT_DIR$/qrtmp/io/rtmp_reader.py" />
         <option value="$PROJECT_DIR$/qrtmp/consts/formats/handshake.py" />
         <option value="$PROJECT_DIR$/setup.py" />
         <option value="$PROJECT_DIR$/qrtmp/rtmp.py" />
-        <option value="$PROJECT_DIR$/qrtmp/base/base_connection.py" />
         <option value="$PROJECT_DIR$/qrtmp/base/data_wrapper.py" />
-        <option value="$PROJECT_DIR$/qrtmp/io/rtmp_writer.py" />
         <option value="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_packet.py" />
-        <option value="$PROJECT_DIR$/examples/rtmp_connect.py" />
         <option value="$PROJECT_DIR$/qrtmp/consts/formats/rtmp_header.py" />
+        <option value="$PROJECT_DIR$/qrtmp/io/net_stream/messages.py" />
+        <option value="$PROJECT_DIR$/qrtmp/formats/types.py" />
+        <option value="$PROJECT_DIR$/tests/header_mask.py" />
+        <option value="$PROJECT_DIR$/qrtmp/io/net_connection/messages.py" />
+        <option value="$PROJECT_DIR$/qrtmp/base/net_stream.py" />
+        <option value="$PROJECT_DIR$/qrtmp/base/base_connection.py" />
+        <option value="$PROJECT_DIR$/qrtmp/formats/rtmp_packet.py" />
+        <option value="$PROJECT_DIR$/qrtmp/io/rtmp_reader.py" />
+        <option value="$PROJECT_DIR$/examples/rtmp_connect.py" />
         <option value="$PROJECT_DIR$/qrtmp/base/net_connection.py" />
+        <option value="$PROJECT_DIR$/qrtmp/io/rtmp_writer.py" />
+        <option value="$PROJECT_DIR$/qrtmp/formats/rtmp_header.py" />
       </list>
     </option>
   </component>
@@ -195,7 +232,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -218,7 +254,79 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
+              <option name="myItemId" value="tests" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
               <option name="myItemId" value="qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="io" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="io" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="net_connection" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="formats" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -254,8 +362,27 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Qrtmp" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="examples" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="sample_pcap" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
       <pane id="Scratches" />
     </panes>
   </component>
@@ -267,18 +394,19 @@
     <property name="js.eslint.eslintPackage" value="" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\goel\Desktop\Program Workspace\Repositories\Qrtmp\qrtmp\base\amf" />
-      <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp\qrtmp\consts\packets" />
-      <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp\qrtmp\consts\packet_types" />
-      <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp\examples" />
-      <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\goel\Desktop\Program Workspace\Repositories\Qrtmp\qrtmp\io\net_stream" />
+      <recent name="C:\Users\goel\Desktop\Program Workspace\Repositories\Qrtmp\qrtmp\consts" />
       <recent name="C:\Users\goel\Desktop\Program Workspace\Repositories\Qrtmp\qrtmp\io\net_connection" />
       <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp\qrtmp\base" />
       <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp\qrtmp\consts\packet_types" />
-      <recent name="C:\Users\goel\Desktop\Program Workspace\Qrtmp\qrtmp" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\goel\Desktop\Program Workspace\Repositories\Qrtmp\qrtmp" />
+      <recent name="C:\Users\goel\Desktop\Program Workspace\Repositories\Qrtmp\qrtmp\base" />
+      <recent name="C:\Users\goel\Desktop\Program Workspace\Repositories\Qrtmp\qrtmp\base\amf" />
+      <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp\qrtmp\consts\packets" />
+      <recent name="C:\Users\goel\Desktop\Program Workspace\Git-work\Qrtmp\qrtmp\consts\packet_types" />
     </key>
   </component>
   <component name="RunManager" selected="Python.rtmp_connect">
@@ -318,61 +446,58 @@
       <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
     </configuration>
-    <configuration default="true" type="DjangoTestsConfigurationType" factoryName="Django tests">
+    <configuration default="false" name="header_mask" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="Qrtmp" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="TARGET" value="" />
-      <option name="SETTINGS_FILE" value="" />
-      <option name="CUSTOM_SETTINGS" value="false" />
-      <option name="USE_OPTIONS" value="false" />
-      <option name="OPTIONS" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/header_mask.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
     </configuration>
-    <configuration default="true" type="JavaScriptTestRunnerProtractor" factoryName="Protractor">
-      <config-file value="" />
-      <node-interpreter value="project" />
-      <envs />
-      <method />
-    </configuration>
-    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug">
-      <method />
-    </configuration>
-    <configuration default="true" type="PyBehaveRunConfigurationType" factoryName="Behave">
+    <configuration default="false" name="rtmp_packet (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/qrtmp/formats" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="Qrtmp" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="ADDITIONAL_ARGS" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/qrtmp/formats/rtmp_packet.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
     </configuration>
-    <configuration default="true" type="PyLettuceRunConfigurationType" factoryName="Lettuce">
+    <configuration default="false" name="rtmp_writer" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/qrtmp/io" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="Qrtmp" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="ADDITIONAL_ARGS" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/qrtmp/io/rtmp_writer.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
     </configuration>
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -404,22 +529,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <module name="Qrtmp" />
-      <method />
-    </configuration>
-    <configuration default="true" type="js.build_tools.gulp" factoryName="Gulp.js">
-      <node-interpreter>project</node-interpreter>
-      <node-options />
-      <gulpfile />
-      <tasks />
-      <arguments />
-      <envs />
-      <method />
-    </configuration>
-    <configuration default="true" type="js.build_tools.npm" factoryName="npm">
-      <command value="run" />
-      <scripts />
-      <node-interpreter value="project" />
-      <envs />
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Attests">
@@ -550,15 +659,21 @@
       <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
     </configuration>
-    <list size="3">
+    <list size="6">
       <item index="0" class="java.lang.String" itemvalue="Python.rtmp_connect" />
       <item index="1" class="java.lang.String" itemvalue="Python.rtmp_packet" />
       <item index="2" class="java.lang.String" itemvalue="Python.base_connection" />
+      <item index="3" class="java.lang.String" itemvalue="Python.header_mask" />
+      <item index="4" class="java.lang.String" itemvalue="Python.rtmp_packet (1)" />
+      <item index="5" class="java.lang.String" itemvalue="Python.rtmp_writer" />
     </list>
     <recent_temporary>
-      <list size="2">
-        <item index="0" class="java.lang.String" itemvalue="Python.base_connection" />
-        <item index="1" class="java.lang.String" itemvalue="Python.rtmp_packet" />
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python.rtmp_writer" />
+        <item index="1" class="java.lang.String" itemvalue="Python.header_mask" />
+        <item index="2" class="java.lang.String" itemvalue="Python.rtmp_packet (1)" />
+        <item index="3" class="java.lang.String" itemvalue="Python.base_connection" />
+        <item index="4" class="java.lang.String" itemvalue="Python.rtmp_packet" />
       </list>
     </recent_temporary>
   </component>
@@ -590,13 +705,12 @@
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28247735" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.29219332" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32952693" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32930514" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294702" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3289689" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.30995107" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.40946168" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.42414355" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -606,9 +720,32 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32789558" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32626426" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32930514" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Concurrent Activities Diagram" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32952693" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
     </layout>
+    <layout-to-restore>
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32952693" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3294702" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3289689" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.40946168" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.42414355" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29219332" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32626426" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32930514" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Concurrent Activities Diagram" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32952693" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3980424" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+    </layout-to-restore>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="processedProjectFiles" value="true" />
@@ -633,57 +770,11 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="12" />
+      <option name="time" value="13" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/qrtmp/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="238">
-          <caret line="14" column="0" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/io/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/qrtmp/core/__init__.py" />
-    <entry file="file://C:/Python27/Lib/site-packages/qrtmp/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/qrtmp/.gitignore" />
-    <entry file="file://$PROJECT_DIR$/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/others/qrtmp.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-391">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2016.2/system/python_stubs/-762174762/_socket.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="124">
-          <caret line="528" column="12" lean-forward="false" selection-start-line="528" selection-start-column="12" selection-end-line="528" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/camera_manager/am.flv" />
     <entry file="file://$PROJECT_DIR$/camera_manager/sample.flv" />
     <entry file="file://$PROJECT_DIR$/camera_manager/camera_manager.py" />
     <entry file="file://$PROJECT_DIR$/README.md">
@@ -696,9 +787,7 @@
     <entry file="file://$PROJECT_DIR$/qrtmp/core/rtmp_writer.py" />
     <entry file="file://$PROJECT_DIR$/qrtmp/core/structures/rtmp_header.py" />
     <entry file="file://$PROJECT_DIR$/qrtmp/consts/types.py" />
-    <entry file="file://$PROJECT_DIR$/qrtmp/util/types.py" />
     <entry file="file://$PROJECT_DIR$/qrtmp/core/rtmp_reader.py" />
-    <entry file="file://$PROJECT_DIR$/qrtmp/consts/__init__.py" />
     <entry file="file://C:/Python27/Lib/site-packages/pyamf/python.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="680">
@@ -714,13 +803,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/base/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/qrtmp/io/rtmp_base.py" />
     <entry file="file://$PROJECT_DIR$/qrtmp/base/amf/pyamf/__init__.py" />
     <entry file="file://$PROJECT_DIR$/qrtmp/consts/formats/header_information" />
@@ -731,71 +813,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/io/net_connection/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/io/net_connection/messages.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="327">
-          <caret line="114" column="8" lean-forward="false" selection-start-line="114" selection-start-column="8" selection-end-line="114" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/consts/formats/handshake.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/consts/formats/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/consts/formats/types.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="16" column="45" lean-forward="false" selection-start-line="16" selection-start-column="45" selection-end-line="16" selection-end-column="45" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/status/net_connection.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-140">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/status/net_stream.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/status/shared_object.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="85">
-          <caret line="5" column="45" lean-forward="true" selection-start-line="5" selection-start-column="45" selection-end-line="5" selection-end-column="45" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/util/status/net_connection.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/util/status/net_stream.py">
+    <entry file="file://$PROJECT_DIR$/qrtmp/io/net_connection/__init__.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/formats/__init__.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/status/net_connection.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/status/net_stream.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/status/shared_object.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/base/status/net_stream.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1143">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
@@ -827,88 +850,188 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="230">
           <caret line="139" column="0" lean-forward="true" selection-start-line="139" selection-start-column="0" selection-end-line="139" selection-end-column="0" />
-          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/rtmp.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/util/types.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/consts/__init__.py" />
+    <entry file="file://$PROJECT_DIR$/qrtmp/io/net_stream/__init__.py" />
+    <entry file="file://$PROJECT_DIR$/others/old-rtmp/rtmp_protocol_base.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/others/old-rtmp/rtmp_protocol.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/flv_manager/flv_manager.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="281">
+          <caret line="143" column="66" lean-forward="false" selection-start-line="143" selection-start-column="66" selection-end-line="143" selection-end-column="66" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/io/net_stream/messages.py" />
+    <entry file="file://$USER_HOME$/.PyCharmCE2016.3/system/python_stubs/-762174762/cStringIO.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="122" column="8" lean-forward="false" selection-start-line="122" selection-start-column="8" selection-end-line="122" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Python27/Lib/site-packages/pyamf/util/pure.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="263">
+          <caret line="65" column="32" lean-forward="true" selection-start-line="65" selection-start-column="32" selection-end-line="65" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/others/rtmp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10863">
+          <caret line="653" column="48" lean-forward="false" selection-start-line="653" selection-start-column="48" selection-end-line="653" selection-end-column="48" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/header_mask.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2465">
+          <caret line="145" column="25" lean-forward="true" selection-start-line="145" selection-start-column="25" selection-end-line="145" selection-end-column="25" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/base/status/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/base/status/net_connection.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-157">
+          <caret line="13" column="0" lean-forward="false" selection-start-line="13" selection-start-column="0" selection-end-line="13" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/base/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/qrtmp/base/data_wrapper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
+        <state relative-caret-position="-1211">
           <caret line="0" column="9" lean-forward="true" selection-start-line="0" selection-start-column="9" selection-end-line="0" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/io/net_connection/messages.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2044">
+          <caret line="42" column="27" lean-forward="false" selection-start-line="42" selection-start-column="27" selection-end-line="42" selection-end-column="27" />
+          <folding>
+            <element signature="e#81#95#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/formats/handshake.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/qrtmp/base/net_stream.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" column="11" lean-forward="true" selection-start-line="6" selection-start-column="11" selection-end-line="6" selection-end-column="11" />
+        <state relative-caret-position="17">
+          <caret line="3" column="0" lean-forward="true" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/rtmp.py" />
-    <entry file="file://$PROJECT_DIR$/qrtmp/io/rtmp_writer.py">
+    <entry file="file://$PROJECT_DIR$/qrtmp/formats/types.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="382">
-          <caret line="23" column="28" lean-forward="false" selection-start-line="23" selection-start-column="28" selection-end-line="23" selection-end-column="28" />
+        <state relative-caret-position="302">
+          <caret line="316" column="0" lean-forward="false" selection-start-line="316" selection-start-column="0" selection-end-line="316" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/base/base_connection.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="85">
+          <caret line="5" column="10" lean-forward="false" selection-start-line="5" selection-start-column="7" selection-end-line="5" selection-end-column="10" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/formats/rtmp_packet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="163">
+          <caret line="103" column="11" lean-forward="true" selection-start-line="103" selection-start-column="11" selection-end-line="103" selection-end-column="11" />
           <folding>
-            <element signature="e#21#35#0" expanded="false" />
+            <element signature="e#90#102#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/qrtmp/io/rtmp_reader.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="41">
-          <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/consts/formats/rtmp_packet.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="41">
-          <caret line="10" column="29" lean-forward="false" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="29" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/consts/formats/rtmp_header.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="196">
-          <caret line="778" column="56" lean-forward="false" selection-start-line="778" selection-start-column="56" selection-end-line="778" selection-end-column="56" />
+        <state relative-caret-position="221">
+          <caret line="69" column="51" lean-forward="true" selection-start-line="69" selection-start-column="51" selection-end-line="69" selection-end-column="51" />
           <folding>
-            <element signature="e#744#758#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/qrtmp/base/base_connection.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="28">
-          <caret line="7" column="0" lean-forward="false" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
-          <folding>
-            <element signature="e#206#219#0" expanded="true" />
+            <element signature="e#435#449#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/examples/rtmp_connect.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="230">
-          <caret line="68" column="41" lean-forward="true" selection-start-line="68" selection-start-column="41" selection-end-line="68" selection-end-column="41" />
+        <state relative-caret-position="272">
+          <caret line="80" column="27" lean-forward="false" selection-start-line="80" selection-start-column="27" selection-end-line="80" selection-end-column="27" />
           <folding>
-            <element signature="e#1508#1524#0" expanded="true" />
+            <element signature="e#1478#1494#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/qrtmp/base/net_connection.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="198" column="0" lean-forward="true" selection-start-line="198" selection-start-column="0" selection-end-line="198" selection-end-column="0" />
+        <state relative-caret-position="163">
+          <caret line="324" column="30" lean-forward="false" selection-start-line="324" selection-start-column="30" selection-end-line="324" selection-end-column="30" />
           <folding>
-            <element signature="e#0#11#0" expanded="true" />
+            <element signature="e#107#121#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/io/rtmp_writer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="302">
+          <caret line="464" column="37" lean-forward="true" selection-start-line="464" selection-start-column="37" selection-end-line="464" selection-end-column="37" />
+          <folding>
+            <element signature="e#21#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/qrtmp/formats/rtmp_header.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="200">
+          <caret line="373" column="54" lean-forward="true" selection-start-line="373" selection-start-column="54" selection-end-line="373" selection-end-column="54" />
+          <folding />
         </state>
       </provider>
     </entry>

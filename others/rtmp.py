@@ -11,10 +11,10 @@ import time
 
 import pyamf
 import pyamf.util.pure
-
 from qrtmp.consts.formats import handshake
-from qrtmp.consts.formats import rtmp_packet
 from qrtmp.consts.formats import types
+
+from qrtmp.formats import rtmp_packet
 from qrtmp.io import rtmp_reader
 from qrtmp.io import rtmp_writer
 from qrtmp.util import socks
