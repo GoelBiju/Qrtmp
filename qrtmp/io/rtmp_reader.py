@@ -15,10 +15,9 @@ import logging
 import pyamf
 import pyamf.amf0
 import pyamf.amf3
-from qrtmp.formats import rtmp_header
-from qrtmp.formats import types
 
 from qrtmp.formats import rtmp_packet
+from qrtmp.formats import types
 
 log = logging.getLogger(__name__)
 
@@ -26,17 +25,24 @@ log = logging.getLogger(__name__)
 class RtmpReader:
     """ This class reads RTMP messages from a stream. """
 
-    def __init__(self, rtmp_stream):
+    def __init__(self, rtmp_stream, rtmp_header_handler):
         """
         Initialise the RTMP reader and set it to read from the specified stream.
+
         :param rtmp_stream:
+        :param rtmp_header_handler:
         """
+        # Initialise the RTMP stream.
         self._rtmp_stream = rtmp_stream
 
-        # Default read chunk size.
+        # Set the RTMP header handler.
+        self._rtmp_header_handler = rtmp_header_handler
+
+        # Set default read chunk size.
         self.chunk_size = 128
 
-        self.previous_header = None
+        # Initialise the previous header which we can refer to, in order to decode the next header.
+        self._previous_header = None
 
     def __iter__(self):
         """
@@ -45,9 +51,8 @@ class RtmpReader:
         """
         return self
 
-    # # TODO: Not properly decoding headers may result in the loop decoding here until a restart.
-    # # TODO: Read packet and the actual decoding of the packet should be in two different sections.
-
+    # TODO: Not properly decoding headers may result in the loop decoding here until a restart.
+    # TODO: Read packet and the actual decoding of the packet should be in two different sections.
     def decode_rtmp_stream(self):
         """
         Decodes the header and body from the RTMP stream.
@@ -59,7 +64,8 @@ class RtmpReader:
         # message_body = []
         msg_body_len = 0
 
-        decoded_header = rtmp_header.decode(self._rtmp_stream)
+        # decoded_header = rtmp_header.decode(self._rtmp_stream)
+        decoded_header = self._rtmp_header_handler.decode_from_stream()
         decoded_body = pyamf.util.BufferedByteStream()
 
         log.debug('read_packet() header %s' % decoded_header)
@@ -71,8 +77,8 @@ class RtmpReader:
 
         # TODO: Temporary fix to the body length being -1 due to a CONTINUATION header type 3 being received.
         if (decoded_header.data_type is -1) or (decoded_header.body_length is -1):
-            decoded_header = self.previous_header
-        self.previous_header = decoded_header
+            decoded_header = self._previous_header
+        self._previous_header = decoded_header
 
         # Loop and read the content of the message until we exceed or equal the expected message body size.
         while True:
@@ -90,8 +96,9 @@ class RtmpReader:
             if msg_body_len >= decoded_header.body_length:
                 break
 
-            # Decode the next header in the stream.
-            next_header = rtmp_header.decode(self._rtmp_stream)
+            # Decode the next header from the RTMP stream.
+            # next_header = rtmp_header.decode(self._rtmp_stream)
+            next_header = self._rtmp_header_handler.decode_from_stream()
 
             # TODO: Evaluate the need for this; is this consistent with all RTMP implementations?
             # WORKAROUND: Even though the RTMP specification states that the extended timestamp
@@ -101,13 +108,13 @@ class RtmpReader:
                 self._rtmp_stream.read_ulong()
 
             # TODO: Assertion tests to see if the next header we get is generated with the constant -1 (default) values.
-            assert next_header.timestamp == -1, (rtmp_header, next_header)
-            assert next_header.body_length == -1, (rtmp_header, next_header)
-            assert next_header.data_type == -1, (rtmp_header, next_header)
-            assert next_header.stream_id == -1, (rtmp_header, next_header)
+            assert next_header.timestamp == -1, (decoded_header, next_header)
+            assert next_header.body_length == -1, (decoded_header, next_header)
+            assert next_header.data_type == -1, (decoded_header, next_header)
+            assert next_header.stream_id == -1, (decoded_header, next_header)
 
         # Make sure the body length we read is equal to the expected body length from the RTMP header.
-        assert decoded_header.body_length == msg_body_len, (rtmp_header, msg_body_len)
+        assert decoded_header.body_length == msg_body_len, (decoded_header, msg_body_len)
 
         # decoded_body = pyamf.util.BufferedByteStream(''.join(message_body))
 
@@ -378,10 +385,9 @@ class RtmpReader:
             #       We need to display this another way.
             assert None, received_packet
 
-        log.debug('Generated RtmpPacket: %r' % repr(received_packet))
-
         # Store the decoded body we received as the body buffer in the packet.
         # received_packet.body_buffer = decoded_body.read()
 
+        log.debug('Generated RtmpPacket: %r' % repr(received_packet))
         # print('[Read] %s' % repr(received_packet))
         return received_packet

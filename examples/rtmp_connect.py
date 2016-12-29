@@ -36,6 +36,7 @@
 
 # 1. Import essential modules.
 import threading
+import time
 
 # from qrtmp import rtmp
 from qrtmp.base import net_connection
@@ -58,7 +59,7 @@ page_url = 'https://www.hdwplayer.com/rtmp-streaming-video-player/'
 nc.set_rtmp_parameters(app, tc_url=tc_url, swf_url=swf_url, page_url=page_url)
 
 #   - set our rtmp client to be recognised as running Windows flash player:
-# nc.flash_ver = nc.windows_flash_version
+nc.flash_ver = nc.windows_flash_version
 nc.return_handled_message(True)
 
 # 5. Attempt a connection with the server and return a boolean:
@@ -66,32 +67,30 @@ nc.return_handled_message(True)
 nc.rtmp_connect()
 
 
-# def packet_loop():
-#     """ A method to loop and handle the formats we receive. """
-#     while nc.active_connection:
-#         Read a packet we receive from the server:
-        # received_packet = nc.read_packet()
-        # print('Received packet:', received_packet.get_body())
+def packet_loop():
+    """ A method to loop and handle the formats we receive. """
+    while nc.active_connection:
+        # Read a packet we receive from the server:
+        received_packet = nc.read_packet()
+        print('Received packet:', received_packet.get_body())
 
 # 6. Loop the replies we receive from the server and handle them
 #    appropriately using the packet loop function in a thread:
-# threading.Thread(target=packet_loop).start()
-
-while nc.active_connection:
-    print(nc.read_packet())
+threading.Thread(target=packet_loop).start()
 
 # Wait several seconds before we continue to ensure that we have a successful connection.
 # time.sleep(7)
 
 # Sending NetConnection and NetStream specific messages:
 #   - call a 'createStream' request.
-# nc.messages.send_create_stream()
+nc.messages.send_create_stream()
 
 #   - send a 'SET_BUFFER_LENGTH' User Control Message with the stream id 0 and 3000ms buffer time.
 # nc.messages.send_set_buffer_length(stream_id=0, buffer_length=3000)
 
 #   - call a 'play' request on the file we want to stream.
-# mp4_file_name = 'mp4:BigBuckBunny_115k.mov'
+mp4_file_name = 'mp4:BigBuckBunny_115k.mov'
 #   - send a 'SET_BUFFER_LENGTH' User Control Message with this time a stream id of 1 and the same 3000ms buffer time.
 # connection.send_play(stream_id=1, stream_name=mp4_file_name)
-# connection.send_set_buffer_length(stream_id=1, buffer_length=3000)
+nc.call('play', [mp4_file_name])
+# nc.messages.send_set_buffer_length(stream_id=0, buffer_length=2000)

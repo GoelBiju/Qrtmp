@@ -8,7 +8,9 @@ import socket
 
 from qrtmp.base import data_wrapper
 from qrtmp.formats import handshake
-from qrtmp.io import rtmp_reader, rtmp_writer
+from qrtmp.formats import rtmp_header
+from qrtmp.io import rtmp_reader
+from qrtmp.io import rtmp_writer
 from qrtmp.util import miscellaneous
 from qrtmp.util import socks
 
@@ -145,11 +147,13 @@ class BaseConnection:
     # TODO: _rtmp_stream is None when setting up the reader and writer.
     def _set_rtmp_io(self):
         """
-        Set the RTMP reader and RTMP writer classes to allow for RTMP messages
-        from the DataTypeMixInFile to be read and interpreted to produce an RTMP output
-        via writing to the socket.
+        The RtmpHeaderHandler is first set for both the RtmpReader and RtmpWriters to use and then the
+        RTMP reader and RTMP writer classes are set to allow for RTMP messages from the DataTypeMixInFile
+        to be read and interpreted to produce an RTMP output via writing to the socket.
 
         NOTE: The RTMP stream object must be initialised before these function can be called.
         """
-        self.rtmp_reader = rtmp_reader.RtmpReader(self._rtmp_stream)
-        self.rtmp_writer = rtmp_writer.RtmpWriter(self._rtmp_stream)
+        self._rtmp_header_handler = rtmp_header.RtmpHeaderHandler(self._rtmp_stream)
+
+        self.rtmp_reader = rtmp_reader.RtmpReader(self._rtmp_stream, self._rtmp_header_handler)
+        self.rtmp_writer = rtmp_writer.RtmpWriter(self._rtmp_stream, self._rtmp_header_handler)

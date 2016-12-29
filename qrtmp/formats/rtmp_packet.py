@@ -4,9 +4,6 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-# from qrtmp.formats import rtmp_header
-# from qrtmp.formats import types
-
 import qrtmp.formats.rtmp_header as rtmp_header
 import qrtmp.formats.types as types
 

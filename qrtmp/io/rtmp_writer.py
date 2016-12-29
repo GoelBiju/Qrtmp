@@ -4,27 +4,31 @@ import pyamf
 import pyamf.amf0
 import pyamf.amf3
 
-from qrtmp.formats import rtmp_header
-from qrtmp.formats import types
 from qrtmp.formats import rtmp_packet
+from qrtmp.formats import types
 
 
 class RtmpWriter:
     """ This class writes RTMP messages into a stream. """
 
-    def __init__(self, rtmp_stream):
+    def __init__(self, rtmp_stream, rtmp_header_handler):
         """
         Initialize the RTMP writer and set it to write into the specified stream.
         Set up a default RtmpPacket to use along with it's PyAMF Buffered Byte Stream body.
 
         :param rtmp_stream:
+        :param rtmp_header_handler:
         """
+        # Initialise the RTMP stream.
         self._rtmp_stream = rtmp_stream
 
         # Default write chunk size at the beginning of the RTMP stream.
         self.chunk_size = 128
 
         self.transaction_id = 0
+
+        # Set up the RTMP header handler.
+        self._rtmp_header_handler = rtmp_header_handler
 
         self._write_packet = None
         self._send_packet = None
@@ -364,18 +368,20 @@ class RtmpWriter:
     #                   be able to set the header chunk type/format manually?
     # TODO: How can we be selective in the type of header format we want to send? Shall we manually state this or
     #       should there be a new way of defining what type of header it is.
-    def send_packet(self, rtmp_packet):
+    def send_packet(self, packet):
         """
         Helper method that sends the specified message into the stream.
         Takes care to prepend the necessary headers and split the message into
         appropriately sized chunks.
 
-        :param rtmp_packet: RtmpPacket object
+        :param packet: RtmpPacket object
         """
+        # print('sending packet')
+
         # If the packet was not set up, then make sure we have the body buffer ready to write.
-        if rtmp_packet.body_buffer is None:
+        if packet.body_buffer is None:
             # print('body buffer was none')
-            rtmp_packet.setup()
+            packet.setup()
 
             # print('we set up the packet')
 
@@ -402,7 +408,8 @@ class RtmpWriter:
         #     send_packet.header.timestamp = self.timestamp
 
         # Encode the initial header before the main RTMP message.
-        rtmp_header.encode(self._rtmp_stream, rtmp_packet.header)
+        # rtmp_header.encode(self._rtmp_stream, packet.header)
+        self._rtmp_header_handler.encode_into_stream(packet.header)
 
         # print('encoded first header into stream')
 
@@ -410,20 +417,21 @@ class RtmpWriter:
         #       whether message that are to be sent are related to one another and what format it needs to be.
 
         # Write chunks into the stream.
-        for i in xrange(0, rtmp_packet.get_body_length(), self.chunk_size):
+        for i in xrange(0, packet.header.body_length, self.chunk_size):
             write_size = i + self.chunk_size
-            chunk = rtmp_packet.body_buffer[i:write_size]
+            chunk = packet.body_buffer[i:write_size]
             self._rtmp_stream.write(chunk)
             # print('writing chunk')
 
             # TODO: Why is the previous in the header encode always 0?
             # We keep on encoding a header for each part of the packet body we send, until it is equal to
             # or exceeds the length of the packet body.
-            if write_size < rtmp_packet.get_body_length():
-                print('continuing chunks')
+            if write_size < packet.header.body_length:
+                # print('continuing chunks')
                 # We provide the previous packet we encoded to provide context into what we are sending.
                 # TODO: The rtmp_stream is None when entering here.
-                rtmp_header.encode(self._rtmp_stream, rtmp_packet.header, rtmp_packet.header)
+                # rtmp_header.encode(self._rtmp_stream, packet.header, packet.header)
+                self._rtmp_header_handler.encode_into_stream(packet.header)
 
         # print('all chunks written')
 

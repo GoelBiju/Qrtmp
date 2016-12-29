@@ -1,7 +1,7 @@
 """
 Qrtmp's NetConnection library which handles the main connection to an RTMP server.
 
-Version 0.2.5
+Version 0.3.5
 """
 
 import logging
@@ -318,11 +318,11 @@ class NetConnection(BaseConnection):
             # Get the RTMP "connect" packet and send write it into the stream using the RtmpWriter.
             connect_packet = self.create_connection_message()
 
-            print('sending connect packet')
+            # print('sending connect packet')
             # Setup the packet and write the message into the RTMP stream.
             self.rtmp_writer.send_packet(connect_packet)
             log.info('Sent RTMP "connect" message/packet.')
-            print('sent packet')
+            # print('sent packet')
 
             # Call the NetConnection messages function to be initialised for use by the client.
             self.initialise_net_connection_messages()
