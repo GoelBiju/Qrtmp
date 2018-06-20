@@ -214,19 +214,21 @@ class NetConnection(base_connection.BaseConnection):
         if not self._rtmp_stream.at_eof():
             packet_header, packet_body = self._rtmp_reader.decode_rtmp_stream()
             received_message = self._rtmp_reader.generate_message(packet_header, packet_body)
+
             if received_message is not None:
                 if self._handle_messages:
                     handled_state = self.handle_message(received_message)
+
                     if handled_state is True:
                         received_message.handled = True
                         if not self._handle_messages_return:
                             return self.read_message()
-                print ('Received message: {0}').format(received_message)
+
+                # print('Received message: {0}').format(received_message)
                 return received_message
-            print 'No message was read from the stream.'
+            print('No message was read from the stream.')
         else:
             raise StopIteration
-        return
 
     def handle_message(self, received_message):
         """
@@ -234,7 +236,8 @@ class NetConnection(base_connection.BaseConnection):
         :param received_message:
         :return:
         """
-        print ('Handling received message: {0}').format(received_message)
+        print('Handling received message: {0}').format(received_message)
+
         if received_message.header.data_type == enum_rtmp_packet.DT_USER_CONTROL and received_message.body['event_type'] == enum_rtmp_packet.UC_STREAM_BEGIN:
             print 'Handled STREAM_BEGIN message: %s' % received_message.body
             return True
@@ -255,6 +258,15 @@ class NetConnection(base_connection.BaseConnection):
             print 'Received PING REQUEST timestamp: %s' % str(timestamp)
             print 'Handled PING REQUEST message with a response to the server.'
             return True
+
+        if received_message.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
+            new_chunk_size = int(received_message.body['chunk_size'])
+            self._rtmp_reader.chunk_size = new_chunk_size
+
+            print('Received SET CHUNK SIZE: %s' % new_chunk_size)
+            print('Handled SET CHUNK SIZE message by setting RTMP Reader to the new chunk size.')
+            return True
+
         return False
 
     def call(self, procedure_name, parameters=None, command_object=None, response_expected=True):
@@ -289,6 +301,27 @@ class NetConnection(base_connection.BaseConnection):
         print (
          'Sending Remote Procedure Call: %s with content:', remote_call.body)
         self._rtmp_writer.setup_packet(remote_call)
+
+    def play(self, stream_name):
+        """
+
+        :param stream_name:
+        :return:
+        """
+        play_call = self._rtmp_writer.new_packet()
+
+        play_call.set_stream_id(1)
+        play_call.set_type(enum_rtmp_packet.DT_COMMAND)
+
+        play_call.body = {
+            'command_name': 'play',
+            'transaction_id': self._rtmp_writer.transaction_id,
+            'command_object': None,
+            'options': [stream_name, -2000]
+        }
+
+        print('Sending play message:', play_call.body)
+        self._rtmp_writer.setup_packet(play_call)
 
     def rtmp_disconnect(self):
         """

@@ -7,8 +7,11 @@ It seems as the above url is broken, so provided below are the the links to the 
 handshake.py - https://github.com/hydralabs/rtmpy/blob/master/rtmpy/protocol/handshake.py
 rtmp_header.py - https://github.com/hydralabs/rtmpy/blob/master/rtmpy/protocol/rtmp/rtmp_header.py
 """
+
 import logging
+
 from core.protocol.types import enum_rtmp_header
+
 log = logging.getLogger(__name__)
 
 
@@ -22,9 +25,8 @@ class RtmpHeader(object):
     An RTMP Header which holds contextual information regarding an RTMP Channel,
     along with the information regarding the payload it will be carrying.
     """
-    __slots__ = [
-     'chunk_type', 'chunk_stream_id', 'timestamp', 'body_length', 'data_type', 'stream_id',
-     'extended_timestamp', 'timestamp_delta', 'timestamp_absolute']
+    __slots__ = ['chunk_type', 'chunk_stream_id', 'timestamp', 'body_length', 'data_type', 'stream_id',
+                 'extended_timestamp', 'timestamp_delta', 'timestamp_absolute']
 
     def __init__(self, chunk_stream_id, timestamp=-1, body_length=-1, data_type=-1, stream_id=-1):
         """
@@ -52,6 +54,7 @@ class RtmpHeader(object):
         :return str: printable representation of the header's attributes.
         """
         attributes = []
+
         for k in self.__slots__:
             v = getattr(self, k, None)
             if v is -1:
@@ -61,10 +64,11 @@ class RtmpHeader(object):
         return '<%s.%s %s at 0x%x>' % (
          self.__class__.__module__,
          self.__class__.__name__,
-         (' ').join(attributes),
+         ' '.join(attributes),
          id(self))
 
 
+# TODO: Implement chunk stream channels for the correct header to be read.
 class RtmpHeaderHandler:
 
     def __init__(self, rtmp_stream):
@@ -91,17 +95,20 @@ class RtmpHeaderHandler:
         @type header_to_encode: L{RtmpHeader}
         """
         if latest_full_header.chunk_stream_id == header_to_encode.chunk_stream_id:
+
             if latest_full_header is header_to_encode:
                 return 192
+
             if latest_full_header.stream_id != header_to_encode.stream_id:
                 return 0
-            if latest_full_header.data_type == header_to_encode.data_type and latest_full_header.body_length == header_to_encode.body_length:
+
+            if latest_full_header.data_type == header_to_encode.data_type and \
+                    latest_full_header.body_length == header_to_encode.body_length:
+
                 if latest_full_header.timestamp == header_to_encode.timestamp:
                     return 192
                 return 128
             return 64
-        else:
-            return
 
     def encode_into_stream(self, encode_header, previous=None):
         """
@@ -135,11 +142,13 @@ class RtmpHeaderHandler:
         @type previous:
         """
         chunk_stream_id = encode_header.chunk_stream_id
+
         if previous is None:
             mask = 0
         else:
             mask = self._get_header_mask(encode_header, previous)
-        print ('Encoding mask:', mask)
+        print('Encoding mask:', mask)
+
         if chunk_stream_id < 64:
             self._rtmp_stream.write_uchar(mask | chunk_stream_id)
         else:
@@ -151,45 +160,52 @@ class RtmpHeaderHandler:
                 self._rtmp_stream.write_uchar(mask + 1)
                 self._rtmp_stream.write_uchar(chunk_stream_id & 255)
                 self._rtmp_stream.write_uchar(chunk_stream_id >> 8)
+
         if mask == 192:
-            print (
-             'Encoded header: ', encode_header)
+            print('Encoded continuation header: ', encode_header)
             return
+
         if mask == 128:
             if encode_header.timestamp >= 16777215:
                 self._rtmp_stream.write_24bit_uint(16777215)
             else:
                 self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
+
             encode_header.timestamp_delta = True
-        else:
-            if mask == 64:
-                if encode_header.timestamp >= 16777215:
-                    self._rtmp_stream.write_24bit_uint(16777215)
-                else:
-                    self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
-                self._rtmp_stream.write_24bit_uint(encode_header.body_length)
-                self._rtmp_stream.write_uchar(encode_header.data_type)
-                encode_header.timestamp_delta = True
+
+        elif mask == 64:
+            if encode_header.timestamp >= 16777215:
+                self._rtmp_stream.write_24bit_uint(16777215)
             else:
-                if mask == 0:
-                    if encode_header.timestamp >= 16777215:
-                        self._rtmp_stream.write_24bit_uint(16777215)
-                    else:
-                        self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
-                    self._rtmp_stream.write_24bit_uint(encode_header.body_length)
-                    self._rtmp_stream.write_uchar(encode_header.data_type)
-                    self._rtmp_stream.endian = '<'
-                    self._rtmp_stream.write_ulong(encode_header.stream_id)
-                    self._rtmp_stream.endian = '!'
-                    encode_header.timestamp_absolute = True
+                self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
+
+            self._rtmp_stream.write_24bit_uint(encode_header.body_length)
+
+            self._rtmp_stream.write_uchar(encode_header.data_type)
+
+            encode_header.timestamp_delta = True
+
+        elif mask == 0:
+            if encode_header.timestamp >= 16777215:
+                self._rtmp_stream.write_24bit_uint(16777215)
+            else:
+                self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
+
+            self._rtmp_stream.write_24bit_uint(encode_header.body_length)
+            self._rtmp_stream.write_uchar(encode_header.data_type)
+            self._rtmp_stream.endian = '<'
+            self._rtmp_stream.write_ulong(encode_header.stream_id)
+            self._rtmp_stream.endian = '!'
+            encode_header.timestamp_absolute = True
+
         if encode_header.timestamp >= 16777215:
             self._rtmp_stream.write_ulong(encode_header.timestamp)
+
             encode_header.extended_timestamp = encode_header.timestamp
         else:
             encode_header.extended_timestamp = None
-        print (
-         'Header encoded:', repr(encode_header))
-        return
+
+        print('Header encoded:', repr(encode_header))
 
     def decode_from_stream(self):
         """
@@ -201,41 +217,59 @@ class RtmpHeaderHandler:
         :return decoded_header: The read header from the RTMP stream.
         @rtype: L{RtmpHeader}
         """
-        chunk_stream_id = self._rtmp_stream.read_uchar()
-        chunk_type = chunk_stream_id >> 6
-        chunk_stream_id &= 63
+        header_size = self._rtmp_stream.read_uchar()
+        # Ord returns the unicode code point of the 1 length string we give it to read.
+        # header_size = ord(self._rtmp_stream._read(1))
+        print('Header size: ', header_size)
+
+        chunk_type = header_size >> 6
+        # chunk_type = header_size & 192  # or header size & 0xC0 (192)
+        # chunk_stream_id &= 63
+        chunk_stream_id = header_size & 63  # (0x3F)
+
         if chunk_stream_id == 0:
             chunk_stream_id = self._rtmp_stream.read_uchar() + 64
         if chunk_stream_id == 1:
             chunk_stream_id = self._rtmp_stream.read_uchar() + 64 + (self._rtmp_stream.read_uchar() << 8)
+
         decoded_header = RtmpHeader(chunk_stream_id)
         decoded_header.chunk_type = chunk_type
+
         if chunk_type == enum_rtmp_header.HR_TYPE_3_CONTINUATION:
-            print (
-             'Decoded header:', repr(decoded_header))
+            print('Decoded header:', repr(decoded_header))
             return decoded_header
+
         if chunk_type == enum_rtmp_header.HR_TYPE_2_SAME_LENGTH_AND_STREAM:
             decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+
             decoded_header.timestamp_delta = True
-        else:
-            if chunk_type == enum_rtmp_header.HR_TYPE_1_SAME_STREAM:
-                decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
-                decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
-                decoded_header.data_type = self._rtmp_stream.read_uchar()
-                decoded_header.timestamp_delta = True
-            else:
-                if chunk_type == enum_rtmp_header.HR_TYPE_0_FULL:
-                    decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
-                    decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
-                    decoded_header.data_type = self._rtmp_stream.read_uchar()
-                    self._rtmp_stream.endian = '<'
-                    decoded_header.stream_id = self._rtmp_stream.read_ulong()
-                    self._rtmp_stream.endian = '!'
-                    decoded_header.timestamp_absolute = True
+
+        elif chunk_type == enum_rtmp_header.HR_TYPE_1_SAME_STREAM:
+            decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+
+            decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
+
+            decoded_header.data_type = self._rtmp_stream.read_uchar()
+
+            decoded_header.timestamp_delta = True
+
+        elif chunk_type == enum_rtmp_header.HR_TYPE_0_FULL:
+            decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+
+            decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
+
+            decoded_header.data_type = self._rtmp_stream.read_uchar()
+
+            self._rtmp_stream.endian = '<'
+            decoded_header.stream_id = self._rtmp_stream.read_ulong()
+            self._rtmp_stream.endian = '!'
+
+            decoded_header.timestamp_absolute = True
+
         if decoded_header.timestamp == 16777215:
             decoded_header.extended_timestamp = self._rtmp_stream.read_ulong()
         else:
             decoded_header.extended_timestamp = None
-        print (
-         'Decoded header:', repr(decoded_header))
+
+        print('Decoded header:', repr(decoded_header))
         return decoded_header

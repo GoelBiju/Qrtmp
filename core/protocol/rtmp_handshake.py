@@ -1,7 +1,7 @@
-"""
-Defines the handshake object for use in an RTMP Handshake before the connection.
-"""
+""" Defines the handshake object for use in an RTMP Handshake before the connection. """
+
 import time
+
 
 class HandshakeChunk(object):
     """ Handshake object representing a chunk.
@@ -17,24 +17,28 @@ class HandshakeChunk(object):
     @type timestamp: C{int}
     """
     _handshake_length = 1536
+
     first = None
     second = None
     payload = None
     timestamp = None
 
     def __init__(self, **kwargs):
-        """ Initialise the handshake chunk object.
+        """
+        Initialise the handshake chunk object.
         
         :param kwargs:
         """
         timestamp = kwargs.get('timestamp', None)
+
         if timestamp is None:
             kwargs['timestamp'] = int(time.time())
+
         self.__dict__.update(kwargs)
-        return
 
     def encode(self, rtmp_stream):
-        """ Encodes packet to the RTMP stream.
+        """
+        Encodes packet to the RTMP stream.
         
         :param rtmp_stream:
         :type rtmp_stream:
@@ -44,7 +48,8 @@ class HandshakeChunk(object):
         rtmp_stream.write(self.payload)
 
     def decode(self, rtmp_stream):
-        """ Decodes packet from the RTMP stream.
+        """
+        Decodes packet from the RTMP stream.
         
         :param rtmp_stream:
         :type rtmp_stream:

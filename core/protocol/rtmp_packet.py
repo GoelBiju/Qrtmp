@@ -1,12 +1,13 @@
 """ RtmpPacket defines a single RTMP message with its header and body contents. """
+
 from core.protocol import rtmp_header
 from core.protocol.types import enum_rtmp_packet
 
+
 class RtmpPacket(object):
     """ A class to abstract the RTMP formats (received) which consists of an RTMP header and an RTMP body. """
-    __slots__ = [
-     'header', 'body', 'body_buffer', 'timestamp_absolute', 'timestamp_delta',
-     'body_is_amf', 'incoming', 'outgoing', 'handled']
+    __slots__ = ['header', 'body', 'body_buffer', 'timestamp_absolute', 'timestamp_delta',
+                 'body_is_amf', 'is_inbound', 'handled']
 
     def __init__(self, set_header=None, set_body=None):
         """
@@ -26,6 +27,7 @@ class RtmpPacket(object):
         self.header = rtmp_header.RtmpHeader(-1)
         self.body = None
         self.body_buffer = None
+
         if set_header is not None:
             self.header.chunk_type = set_header.chunk_type
             self.header.chunk_stream_id = set_header.chunk_stream_id
@@ -36,13 +38,13 @@ class RtmpPacket(object):
             self.header.extended_timestamp = set_header.extended_timestamp
             self.timestamp_absolute = set_header.timestamp_absolute
             self.timestamp_delta = set_header.timestamp_delta
+
         if set_body is not None:
             self.body = set_body
+
         self.body_is_amf = False
-        self.incoming = False
-        self.outgoing = False
+        self.is_inbound = False
         self.handled = False
-        return
 
     def get_chunk_stream_id(self):
         """
@@ -134,8 +136,7 @@ class RtmpPacket(object):
         """
         if self.body_is_amf and 'command_name' in self.body:
             return self.body['command_name']
-        return
-        return
+        return None
 
     def get_transaction_id(self):
         """
@@ -146,8 +147,7 @@ class RtmpPacket(object):
         """
         if self.body_is_amf and 'transaction_id' in self.body:
             return int(self.body['transaction_id'])
-        return
-        return
+        return None
 
     def get_command_object(self):
         """
@@ -158,8 +158,7 @@ class RtmpPacket(object):
         """
         if self.body_is_amf and 'command_object' in self.body:
             return self.body['command_object']
-        return
-        return
+        return None
 
     def get_response(self):
         """
@@ -170,8 +169,7 @@ class RtmpPacket(object):
         """
         if self.body_is_amf and 'response' in self.body:
             return self.body['response']
-        return
-        return
+        return None
 
     def get_body(self):
         """
@@ -181,9 +179,11 @@ class RtmpPacket(object):
         """
         if self.body_is_amf and self.header.data_type == enum_rtmp_packet.DT_COMMAND:
             rtmp_body = list((
-             self.body['command_name'],
-             self.body['transaction_id'],
-             self.body['command_object']))
+                self.body['command_name'],
+                self.body['transaction_id'],
+                self.body['command_object'])
+            )
+
             if 'response' in self.body:
                 for data in range(len(self.body['response'])):
                     rtmp_body.append(self.body['response'][data])
@@ -198,21 +198,24 @@ class RtmpPacket(object):
 
     def finalise(self):
         """
-        
-        @return:
         """
         if self.body_buffer is not None:
             self.header.body_length = len(self.body_buffer)
+
         if self.header.timestamp is -1:
             self.header.timestamp = 0
-        return
 
     def reset(self):
         """ Resets the packet's contents to the original form with an invalid header and body. """
         self.header = rtmp_header.RtmpHeader(-1)
         self.body = None
         self.body_buffer = None
-        return
+        self.timestamp_absolute = None
+        self.timestamp_delta = None
+
+        self.body_is_amf = False
+        self.is_inbound = False
+        self.handled = False
 
     def __repr__(self):
         """
@@ -220,8 +223,10 @@ class RtmpPacket(object):
         
         :return repr: str printable representation of the header's attributes.
         """
-        return '<RtmpPacket.header> chunk_type=%s chunk_stream_id=%s timestamp=%s body_length=%s data_type=%s stream_id=%s extended_timestamp=%s (timestamp_delta=%s, timestamp_absolute=%s) <handled:%s>' % (
-         self.header.chunk_type, self.header.chunk_stream_id, self.header.timestamp,
-         self.header.body_length, self.header.data_type, self.header.stream_id,
-         self.header.extended_timestamp, self.header.timestamp_delta, self.header.timestamp_absolute,
-         self.handled)
+        return '<RtmpPacket.header> chunk_type=%s chunk_stream_id=%s timestamp=%s body_length=%s data_type=%s ' \
+               'stream_id=%s extended_timestamp=%s (timestamp_delta=%s, timestamp_absolute=%s) ' \
+               '<inbound:%s> <handled:%s>' % \
+               (self.header.chunk_type, self.header.chunk_stream_id, self.header.timestamp,
+                self.header.body_length, self.header.data_type, self.header.stream_id,
+                self.header.extended_timestamp, self.header.timestamp_delta, self.header.timestamp_absolute,
+                self.is_inbound, self.handled)

@@ -1,7 +1,14 @@
 """ """
-import logging, pyamf, pyamf.amf0, pyamf.amf3
+
+import logging
+
+import pyamf
+import pyamf.amf0
+import pyamf.amf3
+
 from core.protocol import rtmp_packet
 from core.protocol.types import enum_rtmp_packet, enum_rtmp_header
+
 log = logging.getLogger(__name__)
 
 
@@ -16,6 +23,7 @@ class RtmpWriter(object):
         """
         self._writer_stream = rtmp_stream
         self._writer_header_handler = rtmp_header_handler
+
         self.chunk_size = 128
         self.transaction_id = 0
 
@@ -35,89 +43,109 @@ class RtmpWriter(object):
         """
         
         :param write_packet:
-        :return:
         """
         temp_buffer = pyamf.util.BufferedByteStream('')
+
         if write_packet.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
             write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
             write_packet.header.stream_id = 0
+
             temp_buffer.write_long(write_packet.body['chunk_size'])
-        else:
-            if write_packet.header.data_type == enum_rtmp_packet.DT_ACKNOWLEDGE_BYTES:
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_ACKNOWLEDGE_BYTES:
                 write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
                 write_packet.header.stream_id = 0
+
                 temp_buffer.write_ulong(write_packet.body['sequence_number'])
-            else:
-                if write_packet.header.data_type == enum_rtmp_packet.DT_ABORT:
-                    write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
-                    write_packet.header.stream_id = 0
-                    temp_buffer.write_ulong(write_packet.body['chunk_stream_id'])
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_ABORT:
+                write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
+                write_packet.header.stream_id = 0
+
+                temp_buffer.write_ulong(write_packet.body['chunk_stream_id'])
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_USER_CONTROL:
+                write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
+                write_packet.header.stream_id = 0
+
+                if 'event_type' in write_packet.body:
+                    temp_buffer.write_ushort(write_packet.body['event_type'])
+
+                if 'event_data' in write_packet.body:
+                    temp_buffer.write(write_packet.body['event_data'])
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
+                write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
+                write_packet.header.stream_id = 0
+
+                temp_buffer.write_ulong(write_packet.body['window_acknowledgement_size'])
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_SET_PEER_BANDWIDTH:
+                write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
+                write_packet.header.stream_id = 0
+
+                temp_buffer.write_ulong(write_packet.body['window_acknowledgement_size'])
+                temp_buffer.write_uchar(write_packet.body['limit_type'])
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_AUDIO_MESSAGE:
+                write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CUSTOM_AUDIO
+                write_packet.header.stream_id = 1
+
+                temp_buffer.write_uchar(write_packet.body['control'])
+                temp_buffer.write(write_packet.body['audio_data'])
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
+                write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CUSTOM_VIDEO
+                write_packet.header.stream_id = 1
+
+                temp_buffer.write_uchar(write_packet.body['control'])
+                temp_buffer.write(write_packet.body['video_data'])
+
+        elif write_packet.header.data_type == enum_rtmp_packet.DT_COMMAND or \
+                write_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
+
+                if write_packet.body['command_name'] == 'play':
+                    write_packet.header.chunk_stream_id = enum_rtmp_header.CS_NET_STREAM
                 else:
-                    if write_packet.header.data_type == enum_rtmp_packet.DT_USER_CONTROL:
-                        write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
-                        write_packet.header.stream_id = 0
-                        if 'event_type' in write_packet.body:
-                            temp_buffer.write_ushort(write_packet.body['event_type'])
-                        if 'event_data' in write_packet.body:
-                            temp_buffer.write(write_packet.body['event_data'])
-                    else:
-                        if write_packet.header.data_type == enum_rtmp_packet.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
-                            write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
-                            write_packet.header.stream_id = 0
-                            temp_buffer.write_ulong(write_packet.body['window_acknowledgement_size'])
-                        else:
-                            if write_packet.header.data_type == enum_rtmp_packet.DT_SET_PEER_BANDWIDTH:
-                                write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CONTROL
-                                write_packet.header.stream_id = 0
-                                temp_buffer.write_ulong(write_packet.body['window_acknowledgement_size'])
-                                temp_buffer.write_uchar(write_packet.body['limit_type'])
-                            else:
-                                if write_packet.header.data_type == enum_rtmp_packet.DT_AUDIO_MESSAGE:
-                                    write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CUSTOM_AUDIO
-                                    write_packet.header.stream_id = 1
-                                    temp_buffer.write_uchar(write_packet.body['control'])
-                                    temp_buffer.write(write_packet.body['audio_data'])
-                                else:
-                                    if write_packet.header.data_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
-                                        write_packet.header.chunk_stream_id = enum_rtmp_header.CS_CUSTOM_VIDEO
-                                        write_packet.header.stream_id = 1
-                                        temp_buffer.write_uchar(write_packet.body['control'])
-                                        temp_buffer.write(write_packet.body['video_data'])
-                                    else:
-                                        if write_packet.header.data_type == enum_rtmp_packet.DT_COMMAND or write_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
-                                            write_packet.header.chunk_stream_id = enum_rtmp_header.CS_NET_CONNECTION
-                                            if write_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
-                                                encoder = pyamf.amf3.Encoder(temp_buffer)
-                                            else:
-                                                encoder = pyamf.amf0.Encoder(temp_buffer)
-                                            encoder.writeElement(write_packet.body['command_name'])
-                                            transaction_id = write_packet.body['transaction_id']
-                                            encoder.writeElement(transaction_id)
-                                            command_object = write_packet.body['command_object']
-                                            if type(command_object) is list:
-                                                if len(command_object) is not 0:
-                                                    for command_info in command_object:
-                                                        encoder.writeElement(command_info)
+                    write_packet.header.chunk_stream_id = enum_rtmp_header.CS_NET_CONNECTION
 
-                                            else:
-                                                encoder.writeElement(command_object)
-                                            encoder.writeElement(None)
-                                            options = write_packet.body['options']
-                                            if type(options) is list:
-                                                if len(options) is not 0:
-                                                    for optional_parameter in options:
-                                                        encoder.writeElement(optional_parameter)
+                if write_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
+                    encoder = pyamf.amf3.Encoder(temp_buffer)
+                else:
+                    encoder = pyamf.amf0.Encoder(temp_buffer)
 
-                                            write_packet.body_is_amf = True
-                                            if transaction_id != 0:
-                                                self.transaction_id += 1
-                                        else:
-                                            assert False, write_packet
+                encoder.writeElement(write_packet.body['command_name'])
+                transaction_id = write_packet.body['transaction_id']
+                encoder.writeElement(transaction_id)
+
+                command_object = write_packet.body['command_object']
+                if type(command_object) is list:
+                    if len(command_object) is not 0:
+                        for command_info in command_object:
+                            encoder.writeElement(command_info)
+                else:
+                    encoder.writeElement(command_object)
+
+                if write_packet.body['command_name'] != 'play':
+                    encoder.writeElement(None)
+
+                options = write_packet.body['options']
+                if type(options) is list:
+                    if len(options) is not 0:
+                        for optional_parameter in options:
+                            encoder.writeElement(optional_parameter)
+
+                write_packet.body_is_amf = True
+                if transaction_id != 0:
+                    self.transaction_id += 1
+        else:
+            assert False, write_packet
+
         write_packet.body_buffer = temp_buffer.getvalue()
-        # print ('Body buffer:', write_packet.body_buffer)
+        print('Body buffer:', write_packet.body_buffer)
         write_packet.finalise()
+
         self.send_packet(write_packet)
-        return
 
     @staticmethod
     def write_shared_object_event(event, body_stream):
@@ -128,24 +156,26 @@ class RtmpWriter(object):
         """
         inner_stream = pyamf.util.BufferedByteStream()
         encoder = pyamf.amf0.Encoder(inner_stream)
+
         event_type = event['type']
         if event_type == enum_rtmp_packet.SO_USE:
             assert event['data'] == '', event['data']
-        else:
-            if event_type == enum_rtmp_packet.SO_CHANGE:
-                for attrib_name in event['data']:
-                    attrib_value = event['data'][attrib_name]
-                    encoder.serialiseString(attrib_name)
-                    encoder.writeElement(attrib_value)
 
-            else:
-                if event['type'] == enum_rtmp_packet.SO_CLEAR:
-                    assert event['data'] == '', event['data']
-                else:
-                    if event['type'] == enum_rtmp_packet.SO_USE_SUCCESS:
-                        assert event['data'] == '', event['data']
-                    else:
-                        assert False, event
+        elif event_type == enum_rtmp_packet.SO_CHANGE:
+            for attrib_name in event['data']:
+                attrib_value = event['data'][attrib_name]
+                encoder.serialiseString(attrib_name)
+                encoder.writeElement(attrib_value)
+
+        elif event['type'] == enum_rtmp_packet.SO_CLEAR:
+            assert event['data'] == '', event['data']
+
+        elif event['type'] == enum_rtmp_packet.SO_USE_SUCCESS:
+            assert event['data'] == '', event['data']
+
+        else:
+            assert False, event
+
         body_stream.write_uchar(event_type)
         body_stream.write_ulong(len(inner_stream))
         body_stream.write(inner_stream.getvalue())
@@ -154,7 +184,6 @@ class RtmpWriter(object):
         """
         
         :param packet:
-        :return:
         """
         self._writer_header_handler.encode_into_stream(packet.header)
         print('Encoded first header into stream:', packet.header)
@@ -194,13 +223,17 @@ class FlashSharedObject:
         """
         self.use_success = False
         so_use = writer.new_packet()
+
         so_use.header.data_type = enum_rtmp_packet.DT_SHARED_OBJECT
-        so_use.body = {'curr_version': 0, 
-           'flags': '\x00\x00\x00\x00\x00\x00\x00\x00', 
-           'events': [
-                    {'data': '', 
-                       'type': enum_rtmp_packet.SO_USE}], 
-           'obj_name': self.name}
+        so_use.body = {
+            'curr_version': 0,
+            'flags': '\x00\x00\x00\x00\x00\x00\x00\x00',
+            'events': [{
+                'data': '',
+                'type': enum_rtmp_packet.SO_USE}],
+            'obj_name': self.name
+        }
+
         writer.setup_packet(so_use)
 
     def handle_message(self, message):
@@ -212,11 +245,13 @@ class FlashSharedObject:
         """
         if message['data_type'] == enum_rtmp_packet.DT_SHARED_OBJECT and message['obj_name'] == self.name:
             events = message['events']
+
             if not self.use_success:
                 assert events[0]['type'] == enum_rtmp_packet.SO_USE_SUCCESS, events[0]
                 assert events[1]['type'] == enum_rtmp_packet.SO_CLEAR, events[1]
                 events = events[2:]
                 self.use_success = True
+
             self.handle_events(events)
             return True
         return False
@@ -239,8 +274,10 @@ class FlashSharedObject:
                 assert key in self.data, (key, self.data.keys())
                 del self.data[key]
                 self.on_delete(key)
+
             elif event_type == enum_rtmp_packet.SO_SEND_MESSAGE:
                 self.on_message(event['data'])
+
             elif not False:
                 raise AssertionError(event)
 
