@@ -98,10 +98,12 @@ class BaseConnection(object):
                 self._socket_object = proxy_socket
                 print('Created socket object for proxy socket.')
             else:
-                self._socket_object = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                print 'Created socket object for SOCK_STREAM.'
+                # self._socket_object = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self._socket_object = socket.create_connection((self._ip, self._port))
+                # self._socket_object.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                print('Created socket object for communication.')
 
-            self._socket_object.connect((self._ip, self._port))
+            # self._socket_object.connect((self._ip, self._port))
             print('Connected socket object to IP ({0}) and PORT ({1}).'.format(self._ip, self._port))
 
             self._socket_file = self._socket_object.makefile()

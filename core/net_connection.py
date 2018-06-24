@@ -171,6 +171,9 @@ class NetConnection(base_connection.BaseConnection):
             self._initialise_net_connection_messages()
             print('Initialised the NetConnection default messages.')
 
+            # Start the decoding process in the rtmp reader.
+            # self._rtmp_reader.start_decode()
+
             self._active_connection = True
             print('RTMP connection is active.')
         else:
@@ -178,8 +181,7 @@ class NetConnection(base_connection.BaseConnection):
             return False
 
     def _initialise_net_connection_messages(self):
-        """
-        """
+        """ """
         self.messages = NetConnectionMessages(self._rtmp_writer)
 
     def set_handle_messages(self, new_option):
@@ -211,22 +213,30 @@ class NetConnection(base_connection.BaseConnection):
         
         :return:
         """
+        # TODO: at_eof should be checked when decoding body and header in the reader,
+        #       here we need to check if the queue is empty or not.
         if not self._rtmp_stream.at_eof():
-            packet_header, packet_body = self._rtmp_reader.decode_rtmp_stream()
-            received_message = self._rtmp_reader.generate_message(packet_header, packet_body)
+            if self._rtmp_reader.message_queue_empty():
+                # TODO: Shall we have a loop for continuously decoding the rtmp stream or
+                #       have the read message only read and wait. With a queue an internal loop.
+                packet_header, packet_body = self._rtmp_reader.decode_rtmp_stream()
+                # TODO: Get the next message from the front of the packet queue.
+                received_message = self._rtmp_reader.generate_message(packet_header, packet_body)
 
-            if received_message is not None:
-                if self._handle_messages:
-                    handled_state = self.handle_message(received_message)
+                if received_message is not None:
+                    if self._handle_messages:
+                        handled_state = self.handle_message(received_message)
 
-                    if handled_state is True:
-                        received_message.handled = True
-                        if not self._handle_messages_return:
-                            return self.read_message()
+                        if handled_state is True:
+                            received_message.handled = True
+                            if not self._handle_messages_return:
+                                return self.read_message()
 
-                # print('Received message: {0}').format(received_message)
-                return received_message
-            print('No message was read from the stream.')
+                    # print('Received message: {0}').format(received_message)
+                    return received_message
+                print('No message was read from the stream.')
+            else:
+                return self._rtmp_reader.queued_packet()
         else:
             raise StopIteration
 

@@ -1,6 +1,8 @@
 """ """
 
 import logging
+import struct
+# import threading
 
 import pyamf
 import pyamf.amf0
@@ -8,6 +10,7 @@ import pyamf.amf3
 
 from core.protocol import rtmp_packet
 from core.protocol.types import enum_rtmp_packet
+from core.protocol.rtmp_packet_queue import PacketQueue
 
 log = logging.getLogger(__name__)
 
@@ -23,8 +26,10 @@ class RtmpReader(object):
         """
         self._reader_stream = rtmp_stream
         self._reader_header_handler = rtmp_header_handler
-
         self._previous_header = None
+        self._packet_queue = PacketQueue()
+        # self._decode_thread = None
+
         self.chunk_size = 128
 
     def __iter__(self):
@@ -33,6 +38,14 @@ class RtmpReader(object):
         :return:
         """
         return self
+
+    # def start_decode(self):
+    #     """
+    #
+    #     :return:
+    #     """
+    #     self._decode_thread = threading.Thread(target=self.decode_rtmp_stream)
+    #     self._decode_thread.start()
 
     def decode_rtmp_stream(self):
         """
@@ -61,12 +74,16 @@ class RtmpReader(object):
             if msg_body_len >= decoded_header.body_length:
                 break
 
+            # TODO: If we comment out assertions then we no longer use this.
             # Fetch the next header from the stream.
-            next_header = self._reader_header_handler.decode_from_stream()
-
+            # next_header = self._reader_header_handler.decode_from_stream()
+            # Get the next header and body to parse.
+            self._reader_header_handler.decode_from_stream()
             if decoded_header.timestamp >= 16777215:
                 self._reader_stream.read_ulong()
 
+            # TODO: I am not sure if these assertions work in the case when we have
+            #       aggregate or audio/video messages.
             # assert next_header.timestamp == -1, (decoded_header, next_header)
             # assert next_header.body_length == -1, (decoded_header, next_header)
             # assert next_header.data_type == -1, (decoded_header, next_header)
@@ -74,8 +91,10 @@ class RtmpReader(object):
             # if not next_header.stream_id == -1:
             #     raise AssertionError((decoded_header, next_header))
 
-        # assert decoded_header.body_length == msg_body_len, (decoded_header, msg_body_len)
+        assert decoded_header.body_length == msg_body_len, (decoded_header, msg_body_len)
+
         return decoded_header, decoded_body
+        # self._generate_message(decoded_header, decoded_body)
 
     @staticmethod
     def read_shared_object_event(body_stream, decoder):
@@ -139,8 +158,7 @@ class RtmpReader(object):
 
         return event
 
-    @staticmethod
-    def generate_message(decoded_header, decoded_body):
+    def generate_message(self, decoded_header, decoded_body):
         """
         Given the decoded packet header and body an RTMP Packet
         can be created with this function.
@@ -149,115 +167,216 @@ class RtmpReader(object):
         :param decoded_body:
         :return:
         """
+        # Set up a basic packet given our decoded header.
         received_packet = rtmp_packet.RtmpPacket(decoded_header)
+
         # Set this packet as an inbound packet.
         received_packet.is_inbound = True
 
         # TODO: Implement aggregate headers.
         if received_packet.header.data_type == enum_rtmp_packet.DT_AGGREGATE_MESSAGE:
+            # The chunk stream on which the sub-messages follow (decoded from header).
+            chunk_stream_id = received_packet.get_chunk_stream_id()
 
-            received_packet.body = {
-                'aggregate_data': decoded_body
-            }
+            # Decoding algorithm from rtmp-lite project.
+            aggregate_data = decoded_body.read()
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
-            received_packet.body = {
-                'chunk_size': decoded_body.read_ulong()
-            }
+            while len(aggregate_data) > 0:
+                sub_message_type = ord(aggregate_data[0])
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_ABORT:
-            received_packet.body = {
-                'chunk_stream_id': decoded_body.read_ulong()
-            }
+                # Ensure we do not encounter invalid messages.
+                if sub_message_type == 0:
+                    print('A sub-type of 0 was encountered within aggregate message.')
+                    break
+                elif sub_message_type == enum_rtmp_packet.DT_AUDIO_MESSAGE or \
+                        sub_message_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
+                    print('A/V sub-message, type: %s' % sub_message_type)
+                else:
+                    print('Unknown sub-message, type: %s' % sub_message_type)
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_ACKNOWLEDGE_BYTES:
-            received_packet.body = {
-                'sequence_number': decoded_body.read_ulong()
-            }
+                sub_message_size = struct.unpack('!I', '\x00' + aggregate_data[1:4])[0]
+                sub_message_time = struct.unpack('!I', aggregate_data[4:8])[0]
+                sub_message_stream_id = struct.unpack('<I', aggregate_data[8:12])[0]
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_USER_CONTROL:
-            received_packet.body = {
-                'event_type': decoded_body.read_ushort(),
-                'event_data': decoded_body.read()
-            }
+                # Generate the message header based on these details.
+                sub_packet = rtmp_packet.RtmpPacket()
+                sub_packet.header.chunk_stream_id = chunk_stream_id
+                sub_packet.header.body_length = sub_message_size
+                # print('read aggregate size:', sub_message_size)
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
-            received_packet.body = {
-                'window_acknowledgement_size': decoded_body.read_ulong()
-            }
+                sub_packet.set_type(sub_message_type)
+                sub_packet.set_timestamp(sub_message_time)
+                sub_packet.set_stream_id(sub_message_stream_id)
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_SET_PEER_BANDWIDTH:
-            received_packet.body = {
-                'window_acknowledgement_size': decoded_body.read_ulong(),
-                'limit_type': decoded_body.read_uchar()
-            }
+                # Read the sub message data by skipping past the header.
+                aggregate_data = aggregate_data[11:]
+                sub_message_data = aggregate_data[:sub_message_size]
+                # Set the packet body data.
+                # print('actual data length:', len(sub_message_data))
+                received_packet.body_buffer = sub_message_data
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_AUDIO_MESSAGE:
-            # TODO: Read whole data and not control first when putting into file.
-            received_packet.body = {
-                # 'control': None,
-                'audio_data': None
-            }
+                # Skip past the message data to parse back-pointer.
+                aggregate_data = aggregate_data[sub_message_size:]
+                back_pointer = struct.unpack('!I', aggregate_data[0:4])[0]
+                # TODO: Figure out why it always outputs that back-pointer and sub message size are not equal.
+                # Solution - Place + 11 to message size.
+                if back_pointer != (sub_message_size + 11):
+                    print('Warning: Aggregate sub-message back-pointer=%r != %r' % (back_pointer, sub_message_size))
 
-            if len(decoded_body) is not 0:
-                # received_packet.body['control'] = decoded_body.read_uchar()
-                received_packet.body['audio_data'] = decoded_body.read()
+                # Skip past back-pointer to read next sub-message.
+                aggregate_data = aggregate_data[4:]
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
-            # TODO: Read whole data instead of control first and then remaining body.
-            received_packet.body = {
-                # 'control': None,
-                'video_data': None
-            }
+                # Test parsing the video data.
+                if sub_message_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
+                    first_byte = ord(sub_message_data[0]) & 0xff
+                    codec_id = first_byte & 0x0F
+                    print('Video Data - Codec ID: ', codec_id)
 
-            if len(decoded_body) is not 0:
-                # received_packet.body['control'] = decoded_body.read_uchar()
-                received_packet.body['video_data'] = decoded_body.read()
+                    # If codec used in video data is AVC..
+                    if codec_id == 0x07:
+                        print('AVC codec.')
+                        second_byte = ord(sub_message_data[1]) & 0xff
+                        config = (second_byte == 0)
+                        end_of_sequence = (second_byte == 2)
+                        print('Config & end of sequence: ', config, end_of_sequence)
 
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
-            decoder = pyamf.amf3.Decoder(decoded_body)
+                    # Find the frame-type used in the video data.
+                    frame_type = (first_byte & 0xf0) >> 4
+                    if frame_type == 0x01:
+                        print('Keyframe received in video data.')
+                    elif frame_type == 0x02:
+                        print('Inter frame received in video data.')
+                    elif frame_type == 0x03:
+                        print('Disposable frame received in video data')
+                    else:
+                        print('Unknown video frame type received: %s' % frame_type)
 
-            received_packet.body = {
-                'command_name': decoder.readElement(),
-                'transaction_id': decoder.readElement(),
-                'response': []
-            }
-
-            while not decoded_body.at_eof():
-                received_packet.body['response'].append(decoder.readElement())
-
-            received_packet.body_is_amf = True
-
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_METADATA_MESSAGE:
-            decoder = pyamf.amf0.Decoder(decoded_body)
-
-            received_packet.body = {
-                'data_name': decoder.readElement(),
-                'data_content': []
-            }
-
-            while not decoded_body.at_eof():
-                received_packet.body['data_content'].append(decoder.readElement())
-
-        elif received_packet.header.data_type == enum_rtmp_packet.DT_COMMAND:
-            decoder = pyamf.amf0.Decoder(decoded_body)
-
-            command_message = {
-                'command_name': decoder.readElement(),
-                'transaction_id': decoder.readElement(),
-                'command_object': decoder.readElement(),
-                'response': []
-            }
-
-            while not decoded_body.at_eof():
-                command_message['response'].append(decoder.readElement())
-
-            received_packet.body = command_message
-            received_packet.body_is_amf = True
-
+                # Push the new sub-packet into the RtmpPacket queue.
+                self._packet_queue.push(sub_packet)
+                print('Added sub-packet to queue.')
         else:
-            assert None, received_packet
+            if received_packet.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
+                received_packet.body = {
+                    'chunk_size': decoded_body.read_ulong()
+                }
 
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_ABORT:
+                received_packet.body = {
+                    'chunk_stream_id': decoded_body.read_ulong()
+                }
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_ACKNOWLEDGE_BYTES:
+                received_packet.body = {
+                    'sequence_number': decoded_body.read_ulong()
+                }
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_USER_CONTROL:
+                received_packet.body = {
+                    'event_type': decoded_body.read_ushort(),
+                    'event_data': decoded_body.read()
+                }
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
+                received_packet.body = {
+                    'window_acknowledgement_size': decoded_body.read_ulong()
+                }
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_SET_PEER_BANDWIDTH:
+                received_packet.body = {
+                    'window_acknowledgement_size': decoded_body.read_ulong(),
+                    'limit_type': decoded_body.read_uchar()
+                }
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_AUDIO_MESSAGE:
+                # TODO: Read whole data and not control first when putting into file.
+                # received_packet.body = {
+                #     'control': None,
+                #     'audio_data': decoded_body.read()
+                # }
+
+                # if len(decoded_body) is not 0:
+                #     received_packet.body['control'] = decoded_body.read_uchar()
+                #     received_packet.body['audio_data'] = decoded_body.read()
+
+                if received_packet.header.body_length > 0:
+                    received_packet.body_buffer = decoded_body.read()
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
+                # TODO: Read whole data instead of control first and then remaining body.
+                # received_packet.body = {
+                #     'control': None,
+                #     'video_data': decoded_body.read()
+                # }
+
+                # if len(decoded_body) is not 0:
+                #     received_packet.body['control'] = decoded_body.read_uchar()
+                #     received_packet.body['video_data'] = decoded_body.read()
+
+                if received_packet.header.body_length > 0:
+                    received_packet.body_buffer = decoded_body.read()
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
+                decoder = pyamf.amf3.Decoder(decoded_body)
+
+                received_packet.body = {
+                    'command_name': decoder.readElement(),
+                    'transaction_id': decoder.readElement(),
+                    'response': []
+                }
+
+                while not decoded_body.at_eof():
+                    received_packet.body['response'].append(decoder.readElement())
+
+                received_packet.body_is_amf = True
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_METADATA_MESSAGE:
+                decoder = pyamf.amf0.Decoder(decoded_body)
+
+                received_packet.body = {
+                    'data_name': decoder.readElement(),
+                    'data_content': []
+                }
+
+                while not decoded_body.at_eof():
+                    received_packet.body['data_content'].append(decoder.readElement())
+
+            elif received_packet.header.data_type == enum_rtmp_packet.DT_COMMAND:
+                decoder = pyamf.amf0.Decoder(decoded_body)
+
+                command_message = {
+                    'command_name': decoder.readElement(),
+                    'transaction_id': decoder.readElement(),
+                    'command_object': decoder.readElement(),
+                    'response': []
+                }
+
+                while not decoded_body.at_eof():
+                    command_message['response'].append(decoder.readElement())
+
+                received_packet.body = command_message
+                received_packet.body_is_amf = True
+
+            else:
+                # assert None, received_packet
+                print('Packet was not able to be generated.')
+                return None
 
         print('Received Packet: %s' % repr(received_packet))
         return received_packet
+        # self._packet_queue.push(received_packet)
+
+    def queued_packet(self):
+        """
+        Returns the packet at the front of the queue.
+
+        :return: RtmpPacket object
+        """
+        return self._packet_queue.pop()
+
+    def message_queue_empty(self):
+        """
+        Checks if the current queue is empty or not.
+
+        :return: Boolean
+        """
+        return self._packet_queue.empty()

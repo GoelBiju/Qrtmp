@@ -232,11 +232,12 @@ class RtmpHeaderHandler:
         if chunk_stream_id == 1:
             chunk_stream_id = self._rtmp_stream.read_uchar() + 64 + (self._rtmp_stream.read_uchar() << 8)
 
+        # Create the header to decode fully using the chunk stream id we have decoded.
         decoded_header = RtmpHeader(chunk_stream_id)
         decoded_header.chunk_type = chunk_type
 
         if chunk_type == enum_rtmp_header.HR_TYPE_3_CONTINUATION:
-            print('Decoded header:', repr(decoded_header))
+            # print('Decoded header:', repr(decoded_header))
             return decoded_header
 
         if chunk_type == enum_rtmp_header.HR_TYPE_2_SAME_LENGTH_AND_STREAM:
@@ -271,5 +272,5 @@ class RtmpHeaderHandler:
         else:
             decoded_header.extended_timestamp = None
 
-        print('Decoded header:', repr(decoded_header))
+        # print('Decoded header:', repr(decoded_header))
         return decoded_header

@@ -26,6 +26,7 @@ class RtmpPacket(object):
         """
         self.header = rtmp_header.RtmpHeader(-1)
         self.body = None
+        # TODO: Body buffer is specifically made for writing messages and also reading A/V packets.
         self.body_buffer = None
 
         if set_header is not None:
@@ -71,7 +72,9 @@ class RtmpPacket(object):
         
         :return len(body_buffer):
         """
-        return len(self.body_buffer)
+        # TODO: body buffer may be None
+        # return len(self.body_buffer)
+        return self.header.body_length
 
     def get_type(self):
         """
@@ -194,12 +197,12 @@ class RtmpPacket(object):
     def free_body(self):
         """ 'Free' (clear) the body content of the packet. """
         self.body = None
-        return
 
     def finalise(self):
-        """
-        """
+        """ """
         if self.body_buffer is not None:
+            # TODO: This is only for sending the packet and reading packets header is first
+            #       point of information for body size.
             self.header.body_length = len(self.body_buffer)
 
         if self.header.timestamp is -1:
@@ -225,8 +228,8 @@ class RtmpPacket(object):
         """
         return '<RtmpPacket.header> chunk_type=%s chunk_stream_id=%s timestamp=%s body_length=%s data_type=%s ' \
                'stream_id=%s extended_timestamp=%s (timestamp_delta=%s, timestamp_absolute=%s) ' \
-               '<inbound:%s> <handled:%s>' % \
+               '<inbound:%s> <handled:%s> <A/V Body Buffer:%s>' % \
                (self.header.chunk_type, self.header.chunk_stream_id, self.header.timestamp,
                 self.header.body_length, self.header.data_type, self.header.stream_id,
                 self.header.extended_timestamp, self.header.timestamp_delta, self.header.timestamp_absolute,
-                self.is_inbound, self.handled)
+                self.is_inbound, self.handled, self.body_buffer is not None)
