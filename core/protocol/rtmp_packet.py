@@ -7,7 +7,11 @@ from core.protocol.types import enum_rtmp_packet
 class RtmpPacket(object):
     """ A class to abstract the RTMP formats (received) which consists of an RTMP header and an RTMP body. """
     __slots__ = ['header', 'body', 'body_buffer', 'timestamp_absolute', 'timestamp_delta',
-                 'body_is_amf', 'is_inbound', 'handled']
+                 'body_is_amf', 'transaction_id', 'is_inbound', 'handled']
+
+    # TODO: Transaction id to identify response from server
+    # TODO: Ensure if a response to a packet that needs a response with information is received
+    # TODO: Difference between handled and packet that awaits response.
 
     def __init__(self, set_header=None, set_body=None):
         """
@@ -25,9 +29,14 @@ class RtmpPacket(object):
         :param set_body: dict the body of the RTMP packet, with each key being a section of the RTMP packet.
         """
         self.header = rtmp_header.RtmpHeader(-1)
+        # Body attribute is designed for packets send from the server.
         self.body = None
+
         # TODO: Body buffer is specifically made for writing messages and also reading A/V packets.
+        # Body buffer allows for data that should be kept as its original buffer i.e. audio/video data
+        # and transaction id helps identify the server's response to the message (if there should be one).
         self.body_buffer = None
+        self.transaction_id = None
 
         if set_header is not None:
             self.header.chunk_type = set_header.chunk_type
@@ -73,8 +82,10 @@ class RtmpPacket(object):
         :return len(body_buffer):
         """
         # TODO: body buffer may be None
-        # return len(self.body_buffer)
-        return self.header.body_length
+        if self.body_buffer is not None:
+            return len(self.body_buffer)
+        else:
+            return self.header.body_length
 
     def get_type(self):
         """
@@ -141,6 +152,7 @@ class RtmpPacket(object):
             return self.body['command_name']
         return None
 
+    # TODO: Document accurately.
     def get_transaction_id(self):
         """
         Returns the transaction id received from the server if the message was a COMMAND
@@ -148,9 +160,12 @@ class RtmpPacket(object):
         
         :return body['transaction_id']: int the transaction id of the message or None if it's not present.
         """
-        if self.body_is_amf and 'transaction_id' in self.body:
-            return int(self.body['transaction_id'])
-        return None
+        if self.transaction_id is not None:
+            return self.transaction_id
+        else:
+            if self.transaction_id is None and self.body_is_amf and 'transaction_id' in self.body:
+                return int(self.body['transaction_id'])
+            return None
 
     def get_command_object(self):
         """

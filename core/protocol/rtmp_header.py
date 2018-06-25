@@ -220,7 +220,8 @@ class RtmpHeaderHandler:
         header_size = self._rtmp_stream.read_uchar()
         # Ord returns the unicode code point of the 1 length string we give it to read.
         # header_size = ord(self._rtmp_stream._read(1))
-        print('Header size: ', header_size)
+        # TODO: Use for window ackowledgement total bytes read.
+        # print('Header size: ', header_size)
 
         chunk_type = header_size >> 6
         # chunk_type = header_size & 192  # or header size & 0xC0 (192)

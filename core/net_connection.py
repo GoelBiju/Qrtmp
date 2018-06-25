@@ -213,9 +213,9 @@ class NetConnection(base_connection.BaseConnection):
         
         :return:
         """
-        # TODO: at_eof should be checked when decoding body and header in the reader,
-        #       here we need to check if the queue is empty or not.
         if not self._rtmp_stream.at_eof():
+
+            # Check if there are any queued message waiting to be read.
             if self._rtmp_reader.message_queue_empty():
                 # TODO: Shall we have a loop for continuously decoding the rtmp stream or
                 #       have the read message only read and wait. With a queue an internal loop.
@@ -223,6 +223,8 @@ class NetConnection(base_connection.BaseConnection):
                 # TODO: Get the next message from the front of the packet queue.
                 received_message = self._rtmp_reader.generate_message(packet_header, packet_body)
 
+                # TODO: Handle messages related to streams:
+                #       createStream - _result with stream id
                 if received_message is not None:
                     if self._handle_messages:
                         handled_state = self.handle_message(received_message)
@@ -246,30 +248,40 @@ class NetConnection(base_connection.BaseConnection):
         :param received_message:
         :return:
         """
-        print('Handling received message: {0}').format(received_message)
+        print('Handling received message: {0}'.format(received_message))
 
-        if received_message.header.data_type == enum_rtmp_packet.DT_USER_CONTROL and received_message.body['event_type'] == enum_rtmp_packet.UC_STREAM_BEGIN:
-            print 'Handled STREAM_BEGIN message: %s' % received_message.body
+        if received_message.header.data_type == enum_rtmp_packet.DT_USER_CONTROL and \
+                received_message.body['event_type'] == enum_rtmp_packet.UC_STREAM_BEGIN:
+
+            print('Handled STREAM_BEGIN message: %s' % received_message.body)
             return True
-        if received_message.header.data_type == enum_rtmp_packet.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
-            print 'Handled WINDOW_ACK_SIZE message: %s' % received_message.body['window_acknowledgement_size']
+
+        elif received_message.header.data_type == enum_rtmp_packet.DT_WINDOW_ACKNOWLEDGEMENT_SIZE:
+            print('Handled WINDOW_ACK_SIZE message: %s' % received_message.body['window_acknowledgement_size'])
             return True
-        if received_message.header.data_type == enum_rtmp_packet.DT_SET_PEER_BANDWIDTH:
-            assert received_message.body['window_acknowledgement_size'] == 2500000, received_message.body
-            assert received_message.body['limit_type'] == 2, received_message.body
+
+        elif received_message.header.data_type == enum_rtmp_packet.DT_SET_PEER_BANDWIDTH:
+            # assert received_message.body['window_acknowledgement_size'] == 2500000, received_message.body
+            # assert received_message.body['limit_type'] == 2, received_message.body
+
             client_ack_size = received_message.body['window_acknowledgement_size']
             self.messages.send_window_ack_size(client_ack_size)
-            print 'Handled SET_PEER_BANDWIDTH message with response to server - ACK size %s' % client_ack_size
+
+            print('Handled SET_PEER_BANDWIDTH message with response to server - ACK size %s' % client_ack_size)
             return True
-        if received_message.header.data_type == enum_rtmp_packet.DT_USER_CONTROL and received_message.body['event_type'] == enum_rtmp_packet.UC_PING_REQUEST:
+
+        elif received_message.header.data_type == enum_rtmp_packet.DT_USER_CONTROL and \
+                received_message.body['event_type'] == enum_rtmp_packet.UC_PING_REQUEST:
+
             self.messages.send_ping_response(received_message.body)
             timestamp_unpacked = struct.unpack('>I', received_message.body['event_data'])
             timestamp = timestamp_unpacked[0]
-            print 'Received PING REQUEST timestamp: %s' % str(timestamp)
-            print 'Handled PING REQUEST message with a response to the server.'
+
+            print('Received PING REQUEST timestamp: %s' % str(timestamp))
+            print('Handled PING REQUEST message with a response to the server.')
             return True
 
-        if received_message.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
+        elif received_message.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
             new_chunk_size = int(received_message.body['chunk_size'])
             self._rtmp_reader.chunk_size = new_chunk_size
 
@@ -285,31 +297,38 @@ class NetConnection(base_connection.BaseConnection):
         :param procedure_name:
         :param parameters:
         :param command_object:
-        :param response_expected: If a response if expected a transaction id of 0 is sent.
+        :param response_expected: If a response is expected a transaction id of 0 is sent.
         :return:
         """
         remote_call = self._rtmp_writer.new_packet()
+
         remote_call.set_stream_id(0)
+
         if response_expected:
-            transaction_id = self._rtmp_writer.transaction_id
+            remote_call.transaction_id = self._rtmp_writer.transaction_id
         else:
-            transaction_id = 0
+            remote_call.transaction_id = 0
+
         optional_parameters = []
         if parameters:
             if type(parameters) is list:
                 optional_parameters.extend(parameters)
             elif type(parameters) is dict:
                 optional_parameters.append(parameters)
+
         if self._use_amf3:
             remote_call.set_type(enum_rtmp_packet.DT_AMF3_COMMAND)
         else:
             remote_call.set_type(enum_rtmp_packet.DT_COMMAND)
-        remote_call.body = {'command_name': procedure_name, 
-           'transaction_id': transaction_id, 
-           'command_object': command_object, 
-           'options': optional_parameters}
-        print (
-         'Sending Remote Procedure Call: %s with content:', remote_call.body)
+
+        remote_call.body = {
+            'command_name': procedure_name,
+            'transaction_id': remote_call.transaction_id,
+            'command_object': command_object,
+            'options': optional_parameters
+        }
+
+        print('Sending Remote Procedure Call: %s with content:', remote_call.body)
         self._rtmp_writer.setup_packet(remote_call)
 
     def play(self, stream_name):
@@ -319,13 +338,16 @@ class NetConnection(base_connection.BaseConnection):
         :return:
         """
         play_call = self._rtmp_writer.new_packet()
-
-        play_call.set_stream_id(1)
         play_call.set_type(enum_rtmp_packet.DT_COMMAND)
+
+        # TODO: Manage stream id.
+        play_call.set_stream_id(1)
+
+        play_call.transaction_id = self._rtmp_writer.transaction_id
 
         play_call.body = {
             'command_name': 'play',
-            'transaction_id': self._rtmp_writer.transaction_id,
+            'transaction_id': play_call.transaction_id,
             'command_object': None,
             'options': [stream_name, -2000]
         }
@@ -338,13 +360,14 @@ class NetConnection(base_connection.BaseConnection):
         
         :return:
         """
-        print 'Disconnecting NetConnection.'
+        print('Disconnecting NetConnection.')
         self._active_connection = False
-        print 'Active connection is off.'
+
+        print('Active connection is off.')
         self._rtmp_base_disconnect()
 
 
-class NetConnectionMessages(object):
+class NetConnectionMessages:
 
     def __init__(self, stream_writer):
         """
@@ -353,6 +376,7 @@ class NetConnectionMessages(object):
         """
         self._message_writer = stream_writer
 
+    # User Control messages.
     def send_set_chunk_size(self, new_chunk_size):
         """
         
@@ -361,9 +385,12 @@ class NetConnectionMessages(object):
         """
         set_chunk_size = self._message_writer.new_packet()
         set_chunk_size.set_type(enum_rtmp_packet.DT_SET_CHUNK_SIZE)
-        set_chunk_size.body = {'chunk_size': int(new_chunk_size)}
-        print (
-         'Sending SET CHUNK SIZE to RTMP server:', set_chunk_size)
+
+        set_chunk_size.body = {
+            'chunk_size': int(new_chunk_size)
+        }
+
+        print('Sending SET CHUNK SIZE to RTMP server:', set_chunk_size)
         self._message_writer.setup_packet(set_chunk_size)
 
     def send_set_buffer_length(self, stream_id, buffer_length):
@@ -377,10 +404,13 @@ class NetConnectionMessages(object):
         packed_stream_id = struct.pack('>I', stream_id)
         packed_buffer_length = struct.pack('>I', buffer_length)
         set_buffer_length.set_type(enum_rtmp_packet.DT_USER_CONTROL)
-        set_buffer_length.body = {'event_type': enum_rtmp_packet.UC_SET_BUFFER_LENGTH, 
-           'event_data': packed_stream_id + packed_buffer_length}
-        print (
-         'Sending SET BUFFER LENGTH (User Control RTMP message) to server:', set_buffer_length)
+
+        set_buffer_length.body = {
+            'event_type': enum_rtmp_packet.UC_SET_BUFFER_LENGTH,
+            'event_data': packed_stream_id + packed_buffer_length
+        }
+
+        print('Sending SET BUFFER LENGTH (User Control RTMP message) to server:', set_buffer_length)
         self._message_writer.setup_packet(set_buffer_length)
 
     def send_ping_request(self):
@@ -390,10 +420,13 @@ class NetConnectionMessages(object):
         """
         ping_request = self._message_writer.new_packet()
         ping_request.set_type(enum_rtmp_packet.DT_USER_CONTROL)
-        ping_request.body = {'event_type': enum_rtmp_packet.UC_PING_REQUEST, 
-           'event_data': struct.pack('>I', int(time.time()))}
-        print (
-         'Sending PING REQUEST (User Control RTMP message) to server:', ping_request)
+
+        ping_request.body = {
+            'event_type': enum_rtmp_packet.UC_PING_REQUEST,
+            'event_data': struct.pack('>I', int(time.time()))
+        }
+
+        print('Sending PING REQUEST (User Control RTMP message) to server:', ping_request)
         self._message_writer.setup_packet(ping_request)
 
     def send_ping_response(self, amf_data):
@@ -404,10 +437,13 @@ class NetConnectionMessages(object):
         """
         ping_response = self._message_writer.new_packet()
         ping_response.set_type(enum_rtmp_packet.DT_USER_CONTROL)
-        ping_response.body = {'event_type': enum_rtmp_packet.UC_PING_RESPONSE, 
-           'event_data': amf_data['event_data']}
-        print (
-         'Sending PING RESPONSE (User Control RTMP message) to server:', ping_response)
+
+        ping_response.body = {
+            'event_type': enum_rtmp_packet.UC_PING_RESPONSE,
+            'event_data': amf_data['event_data']
+        }
+
+        print('Sending PING RESPONSE (User Control RTMP message) to server:', ping_response)
         self._message_writer.setup_packet(ping_response)
 
     def send_window_ack_size(self, ack_size):
@@ -418,7 +454,17 @@ class NetConnectionMessages(object):
         """
         window_ack_size = self._message_writer.new_packet()
         window_ack_size.set_type(enum_rtmp_packet.DT_WINDOW_ACKNOWLEDGEMENT_SIZE)
-        window_ack_size.body = {'window_acknowledgement_size': ack_size}
-        print (
-         'Sending WINDOW_ACKNOWLEDGEMENT_SIZE to server:', window_ack_size)
+
+        window_ack_size.body = {
+            'window_acknowledgement_size': ack_size
+        }
+
+        print('Sending WINDOW_ACKNOWLEDGEMENT_SIZE to server:', window_ack_size)
         self._message_writer.setup_packet(window_ack_size)
+
+    # Default NetConnection messages.
+    # def send_create_stream(self):
+    #     """
+    #
+    #     """
+

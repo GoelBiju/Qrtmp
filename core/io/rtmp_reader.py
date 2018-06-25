@@ -3,6 +3,7 @@
 import logging
 import struct
 # import threading
+import time
 
 import pyamf
 import pyamf.amf0
@@ -196,6 +197,7 @@ class RtmpReader(object):
 
                 sub_message_size = struct.unpack('!I', '\x00' + aggregate_data[1:4])[0]
                 sub_message_time = struct.unpack('!I', aggregate_data[4:8])[0]
+                # sub_message_time = 0
                 sub_message_stream_id = struct.unpack('<I', aggregate_data[8:12])[0]
 
                 # Generate the message header based on these details.
@@ -212,8 +214,8 @@ class RtmpReader(object):
                 aggregate_data = aggregate_data[11:]
                 sub_message_data = aggregate_data[:sub_message_size]
                 # Set the packet body data.
-                # print('actual data length:', len(sub_message_data))
-                received_packet.body_buffer = sub_message_data
+                print('actual data length:', len(sub_message_data))
+                sub_packet.body_buffer = sub_message_data
 
                 # Skip past the message data to parse back-pointer.
                 aggregate_data = aggregate_data[sub_message_size:]
@@ -226,34 +228,13 @@ class RtmpReader(object):
                 # Skip past back-pointer to read next sub-message.
                 aggregate_data = aggregate_data[4:]
 
-                # Test parsing the video data.
-                if sub_message_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
-                    first_byte = ord(sub_message_data[0]) & 0xff
-                    codec_id = first_byte & 0x0F
-                    print('Video Data - Codec ID: ', codec_id)
-
-                    # If codec used in video data is AVC..
-                    if codec_id == 0x07:
-                        print('AVC codec.')
-                        second_byte = ord(sub_message_data[1]) & 0xff
-                        config = (second_byte == 0)
-                        end_of_sequence = (second_byte == 2)
-                        print('Config & end of sequence: ', config, end_of_sequence)
-
-                    # Find the frame-type used in the video data.
-                    frame_type = (first_byte & 0xf0) >> 4
-                    if frame_type == 0x01:
-                        print('Keyframe received in video data.')
-                    elif frame_type == 0x02:
-                        print('Inter frame received in video data.')
-                    elif frame_type == 0x03:
-                        print('Disposable frame received in video data')
-                    else:
-                        print('Unknown video frame type received: %s' % frame_type)
+                # Test parsing the audio/video data information.
+                add = self._parse_av_info(sub_message_type, sub_message_data)
 
                 # Push the new sub-packet into the RtmpPacket queue.
-                self._packet_queue.push(sub_packet)
-                print('Added sub-packet to queue.')
+                if add is True:
+                    self._packet_queue.push(sub_packet)
+                # print('Added sub-packet to queue.')
         else:
             if received_packet.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
                 received_packet.body = {
@@ -299,7 +280,16 @@ class RtmpReader(object):
                 #     received_packet.body['audio_data'] = decoded_body.read()
 
                 if received_packet.header.body_length > 0:
+                    # received_packet.header.timestamp = 0
                     received_packet.body_buffer = decoded_body.read()
+                    add = self._parse_av_info(received_packet.header.data_type, received_packet.body_buffer)
+
+                    if add is not True:
+                        return None
+                # else:
+                #     received_packet.body_buffer = ''
+                else:
+                    return None
 
             elif received_packet.header.data_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
                 # TODO: Read whole data instead of control first and then remaining body.
@@ -313,7 +303,16 @@ class RtmpReader(object):
                 #     received_packet.body['video_data'] = decoded_body.read()
 
                 if received_packet.header.body_length > 0:
+                    # received_packet.header.timestamp = 0
                     received_packet.body_buffer = decoded_body.read()
+                    add = self._parse_av_info(received_packet.header.data_type, received_packet.body_buffer)
+
+                    if add is not True:
+                        return None
+                # else:
+                #     received_packet.body_buffer = ''
+                else:
+                    return None
 
             elif received_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
                 decoder = pyamf.amf3.Decoder(decoded_body)
@@ -380,3 +379,51 @@ class RtmpReader(object):
         :return: Boolean
         """
         return self._packet_queue.empty()
+
+    @staticmethod
+    def _parse_av_info(message_type, message_data):
+        """
+
+        :param message_type:
+        :param message_data:
+        """
+        add = False
+
+        if message_type == enum_rtmp_packet.DT_AUDIO_MESSAGE:
+            codec_id = ((ord(message_data[0]) & 0xff) & 0xf0) >> 4
+            print('Audio Data - Codec ID: ', codec_id)
+            if codec_id == 0x0a:
+                print('AAC codec in audio.')
+            add = True
+
+        elif message_type == enum_rtmp_packet.DT_VIDEO_MESSAGE:
+            first_byte = ord(message_data[0]) & 0xff
+            codec_id = first_byte & 0x0F
+            print('Video Data - Codec ID: ', codec_id)
+
+            # If codec used in video data is AVC..
+            if codec_id == 0x07:
+                print('AVC codec in video.')
+                second_byte = ord(message_data[1]) & 0xff
+                config = (second_byte == 0)
+                end_of_sequence = (second_byte == 2)
+                print('Config & end of sequence: ', config, end_of_sequence)
+
+            # Find the frame-type used in the video data.
+            frame_type = (first_byte & 0xf0) >> 4
+            if frame_type == 0x01:
+                print('Keyframe received in video data.')
+                add = True
+            elif frame_type == 0x02:
+                print('Inter frame received in video data.')
+                add = True
+            elif frame_type == 0x03:
+                print('Disposable frame received in video data.')
+            elif frame_type == 0x05:
+                print('Video Info frame received in video data.')
+                add = False
+            else:
+                print('Unknown video frame type received: %s' % frame_type)
+                add = False
+
+        return add
