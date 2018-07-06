@@ -43,6 +43,13 @@ class NetConnection(base_connection.BaseConnection):
         self._handle_messages_return = None
         self._active_connection = False
 
+    def play_start_timestamp(self):
+        """
+
+        :return:
+        """
+        self._rtmp_reader.play_start_time = time.time()
+
     def active(self):
         """ """
         return self._active_connection
@@ -155,6 +162,9 @@ class NetConnection(base_connection.BaseConnection):
                     connection_message.body['options'].extend(parameter)
 
             print('Added extra RTMP parameters into connection message.')
+
+        # Increment the transaction id for next use.
+        self._rtmp_writer.transaction_id += 1
         return connection_message
 
     def rtmp_connect(self):
@@ -286,7 +296,7 @@ class NetConnection(base_connection.BaseConnection):
             self._rtmp_reader.chunk_size = new_chunk_size
 
             print('Received SET CHUNK SIZE: %s' % new_chunk_size)
-            print('Handled SET CHUNK SIZE message by setting RTMP Reader to the new chunk size.')
+            print('Handled SET CHUNK SIZE message by setting RTMP Reader/Writer to the new chunk size.')
             return True
 
         return False
@@ -301,7 +311,6 @@ class NetConnection(base_connection.BaseConnection):
         :return:
         """
         remote_call = self._rtmp_writer.new_packet()
-
         remote_call.set_stream_id(0)
 
         if response_expected:
@@ -324,14 +333,16 @@ class NetConnection(base_connection.BaseConnection):
         remote_call.body = {
             'command_name': procedure_name,
             'transaction_id': remote_call.transaction_id,
-            'command_object': command_object,
-            'options': optional_parameters
+            'command_object': command_object
         }
+
+        if len(optional_parameters) > 0:
+            remote_call.body['options'] = optional_parameters
 
         print('Sending Remote Procedure Call: %s with content:', remote_call.body)
         self._rtmp_writer.setup_packet(remote_call)
 
-    def play(self, stream_name):
+    def play(self, stream_name, start_time=0):
         """
 
         :param stream_name:
@@ -339,17 +350,15 @@ class NetConnection(base_connection.BaseConnection):
         """
         play_call = self._rtmp_writer.new_packet()
         play_call.set_type(enum_rtmp_packet.DT_COMMAND)
-
         # TODO: Manage stream id.
         play_call.set_stream_id(1)
-
-        play_call.transaction_id = self._rtmp_writer.transaction_id
+        play_call.transaction_id = 0
 
         play_call.body = {
             'command_name': 'play',
             'transaction_id': play_call.transaction_id,
             'command_object': None,
-            'options': [stream_name, -2000]
+            'options': [stream_name, 0, start_time]
         }
 
         print('Sending play message:', play_call.body)
@@ -461,10 +470,3 @@ class NetConnectionMessages:
 
         print('Sending WINDOW_ACKNOWLEDGEMENT_SIZE to server:', window_ack_size)
         self._message_writer.setup_packet(window_ack_size)
-
-    # Default NetConnection messages.
-    # def send_create_stream(self):
-    #     """
-    #
-    #     """
-

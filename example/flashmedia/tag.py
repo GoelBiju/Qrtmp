@@ -216,6 +216,7 @@ class Tag(Packet):
 
         if len(header) < 11:
             raise FLVError("Insufficient tag header")
+            # print("Insufficient tag header.")
 
         (flagb, data_size, timestamp, timestamp_ext,
          streamid) = unpack_many_from(header, 0, (U8, U24BE, U24BE, U8, U24BE))
@@ -242,6 +243,9 @@ class Tag(Packet):
         else:
             data = RawData(tag_data)
             padding = b""
+
+        print('chunk type: %s, timestamp: %s, timestamp_ext: %s, length: %s, stream id: %s' %
+              (flags.bit.type, timestamp, timestamp_ext, data, streamid))
 
         tag = Tag(flags.bit.type, timestamp, data,
                   streamid, bool(flags.bit.filter), padding)

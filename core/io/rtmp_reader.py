@@ -29,7 +29,7 @@ class RtmpReader(object):
         self._reader_header_handler = rtmp_header_handler
         self._previous_header = None
         self._packet_queue = PacketQueue()
-        # self._decode_thread = None
+        # self.total_time = 0
 
         self.chunk_size = 128
 
@@ -39,14 +39,6 @@ class RtmpReader(object):
         :return:
         """
         return self
-
-    # def start_decode(self):
-    #     """
-    #
-    #     :return:
-    #     """
-    #     self._decode_thread = threading.Thread(target=self.decode_rtmp_stream)
-    #     self._decode_thread.start()
 
     def decode_rtmp_stream(self):
         """
@@ -182,6 +174,9 @@ class RtmpReader(object):
             # Decoding algorithm from rtmp-lite project.
             aggregate_data = decoded_body.read()
 
+            # base_timestamp = 0
+            # set_timestamp = False
+
             while len(aggregate_data) > 0:
                 sub_message_type = ord(aggregate_data[0])
 
@@ -197,7 +192,13 @@ class RtmpReader(object):
 
                 sub_message_size = struct.unpack('!I', '\x00' + aggregate_data[1:4])[0]
                 sub_message_time = struct.unpack('!I', aggregate_data[4:8])[0]
-                # sub_message_time = 0
+                sub_message_time |= (ord(aggregate_data[7]) << 24)
+
+                # if not set_timestamp:
+                #     base_timestamp = sub_message_time
+                #     set_timestamp = True
+
+                # TODO: Is the stream id correct here.
                 sub_message_stream_id = struct.unpack('<I', aggregate_data[8:12])[0]
 
                 # Generate the message header based on these details.
@@ -214,7 +215,7 @@ class RtmpReader(object):
                 aggregate_data = aggregate_data[11:]
                 sub_message_data = aggregate_data[:sub_message_size]
                 # Set the packet body data.
-                print('actual data length:', len(sub_message_data))
+                # print('actual data length:', len(sub_message_data))
                 sub_packet.body_buffer = sub_message_data
 
                 # Skip past the message data to parse back-pointer.
@@ -233,8 +234,14 @@ class RtmpReader(object):
 
                 # Push the new sub-packet into the RtmpPacket queue.
                 if add is True:
+                    # new_timestamp = received_packet.get_timestamp() + sub_message_time - base_timestamp
+                    # sub_packet.set_timestamp(new_timestamp)
+                    # print('New timestamp set for aggregate:', sub_packet.get_timestamp())
+
+                    # self.total_time += new_timestamp
+                    # print('Final timestamp set:', self.total_time)
                     self._packet_queue.push(sub_packet)
-                # print('Added sub-packet to queue.')
+                    # print('Added sub-packet to queue.')
         else:
             if received_packet.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
                 received_packet.body = {
@@ -286,6 +293,9 @@ class RtmpReader(object):
 
                     if add is not True:
                         return None
+                    # else:
+                    #     if received_packet.get_timestamp() is not 0:
+                    #         self.total_time += received_packet.get_timestamp()
                 # else:
                 #     received_packet.body_buffer = ''
                 else:
@@ -309,6 +319,9 @@ class RtmpReader(object):
 
                     if add is not True:
                         return None
+                    # else:
+                    #     if received_packet.get_timestamp() is not 0:
+                    #         self.total_time += received_packet.get_timestamp()
                 # else:
                 #     received_packet.body_buffer = ''
                 else:
@@ -360,7 +373,7 @@ class RtmpReader(object):
                 print('Packet was not able to be generated.')
                 return None
 
-        print('Received Packet: %s' % repr(received_packet))
+        # print('Received Packet: %s' % repr(received_packet))
         return received_packet
         # self._packet_queue.push(received_packet)
 
@@ -421,9 +434,7 @@ class RtmpReader(object):
                 print('Disposable frame received in video data.')
             elif frame_type == 0x05:
                 print('Video Info frame received in video data.')
-                add = False
             else:
                 print('Unknown video frame type received: %s' % frame_type)
-                add = False
 
         return add

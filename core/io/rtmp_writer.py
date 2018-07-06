@@ -255,6 +255,7 @@ class RtmpWriter(object):
                 write_packet.header.data_type == enum_rtmp_packet.DT_AMF3_COMMAND:
 
                 # TODO: Chunkstream for netstream messages should be already otherwise specified.
+                #       Should not be here, hardcoded..
                 if write_packet.body['command_name'] == 'play':
                     write_packet.header.chunk_stream_id = enum_rtmp_header.CS_NET_STREAM
                 else:
@@ -265,6 +266,7 @@ class RtmpWriter(object):
                 else:
                     encoder = pyamf.amf0.Encoder(temp_buffer)
 
+                # Write the invoked commands name and the message transaction id.
                 encoder.writeElement(write_packet.body['command_name'])
                 transaction_id = write_packet.body['transaction_id']
                 encoder.writeElement(transaction_id)
@@ -277,17 +279,14 @@ class RtmpWriter(object):
                 else:
                     encoder.writeElement(command_object)
 
-                # TODO: There should not be an extra None value here - this is hardcoded.
-                if write_packet.body['command_name'] != 'play':
-                    encoder.writeElement(None)
-
-                options = write_packet.body['options']
-                if type(options) is list:
-                    if len(options) is not 0:
-                        for optional_parameter in options:
-                            encoder.writeElement(optional_parameter)
-                else:
-                    print('RtmpWriter Error: Options is not a list, instead: ', type(options))
+                if 'options' in write_packet.body:
+                    options = write_packet.body['options']
+                    if type(options) is list:
+                        if len(options) is not 0:
+                            for optional_parameter in options:
+                                encoder.writeElement(optional_parameter)
+                    else:
+                        print('RtmpWriter Error: Options is not a list, instead: ', type(options))
 
                 write_packet.body_is_amf = True
                 if transaction_id != 0:
@@ -296,7 +295,7 @@ class RtmpWriter(object):
             assert False, write_packet
 
         write_packet.body_buffer = temp_buffer.getvalue()
-        # print('Body buffer:', write_packet.body_buffer)
+        print('Body buffer:', len(write_packet.body_buffer))
         write_packet.finalise()
 
         self.send_packet(write_packet)

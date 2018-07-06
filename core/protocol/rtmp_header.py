@@ -28,6 +28,7 @@ class RtmpHeader(object):
     __slots__ = ['chunk_type', 'chunk_stream_id', 'timestamp', 'body_length', 'data_type', 'stream_id',
                  'extended_timestamp', 'timestamp_delta', 'timestamp_absolute']
 
+    # TODO: Store the absolute timestamp and timestamp delta correctly.
     def __init__(self, chunk_stream_id, timestamp=-1, body_length=-1, data_type=-1, stream_id=-1):
         """
         
@@ -44,8 +45,8 @@ class RtmpHeader(object):
         self.data_type = int(data_type)
         self.stream_id = int(stream_id)
         self.extended_timestamp = -1
-        self.timestamp_absolute = False
         self.timestamp_delta = False
+        self.timestamp_absolute = False
 
     def __repr__(self):
         """
@@ -220,7 +221,7 @@ class RtmpHeaderHandler:
         header_size = self._rtmp_stream.read_uchar()
         # Ord returns the unicode code point of the 1 length string we give it to read.
         # header_size = ord(self._rtmp_stream._read(1))
-        # TODO: Use for window ackowledgement total bytes read.
+        # TODO: Use for window acknowledgement total bytes read.
         # print('Header size: ', header_size)
 
         chunk_type = header_size >> 6
@@ -239,6 +240,12 @@ class RtmpHeaderHandler:
 
         if chunk_type == enum_rtmp_header.HR_TYPE_3_CONTINUATION:
             # print('Decoded header:', repr(decoded_header))
+
+            # Handle red5 server ping request which has defines no data-type and
+            # is sent as a continuation header.
+            if chunk_stream_id == enum_rtmp_header.CS_CONTROL:
+                decoded_header.data_type = 4
+                decoded_header.body_length = 6
             return decoded_header
 
         if chunk_type == enum_rtmp_header.HR_TYPE_2_SAME_LENGTH_AND_STREAM:
