@@ -60,11 +60,15 @@ class BaseConnection(object):
 
         print('C1, S1, C2, S2 handshake chunks (packets) initialised.')
         self._rtmp_stream.write_uchar(3)
+        print('done')
         c1.first = 0
         c1.second = 0
         c1.payload = self._create_random_bytes(1528)
+        print('done')
         c1.encode(self._rtmp_stream)
+        print('done')
         self._rtmp_stream.flush()
+        print('done')
 
         print('Wrote C1 handshake chunk into RTMP stream.')
         self._rtmp_stream.read_uchar()
@@ -143,7 +147,7 @@ class BaseConnection(object):
         """
         ran_bytes = ''
         i, j = (0, 255)
-        for x in xrange(0, length):
+        for x in range(0, length):
             ran_bytes += chr(random.randint(i, j))
 
         return ran_bytes

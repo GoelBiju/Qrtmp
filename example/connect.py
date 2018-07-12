@@ -77,7 +77,7 @@ def loop():
         try:
             message = nc.read_message()
             if message is not None:
-                print(message.get_body())
+                # print(message.get_body())
 
                 message_type = message.get_type()
                 # Handle audio/video messages coming through in order to save them.
@@ -115,3 +115,4 @@ nc.messages.send_set_buffer_length(1, 36000000)
 
 # Make a call to receive video/audio data from a stream.
 nc.play('honda_accord', start_time=-1)
+# nc.play('test', start_time=-1)

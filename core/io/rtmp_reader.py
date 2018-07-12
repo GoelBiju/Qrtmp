@@ -4,6 +4,7 @@ import logging
 import struct
 # import threading
 import time
+import io
 
 import pyamf
 import pyamf.amf0
@@ -172,13 +173,21 @@ class RtmpReader(object):
             chunk_stream_id = received_packet.get_chunk_stream_id()
 
             # Decoding algorithm from rtmp-lite project.
-            aggregate_data = decoded_body.read()
+            # aggregate_data = decoded_body.read()
 
-            # base_timestamp = 0
-            # set_timestamp = False
+            # Set data into IO byte buffer (from rtmp2flv)
+            raw_data = b''.join(decoded_body.read())
+            aggregate_data = io.BytesIO(raw_data)
 
-            while len(aggregate_data) > 0:
-                sub_message_type = ord(aggregate_data[0])
+            # Set the first timestamp.
+            first_timestamp = None
+
+            # while len(aggregate_data) > 0:
+            while aggregate_data.tell() < len(raw_data):
+                # Read sub message data type.
+                # sub_message_type = ord(aggregate_data[0])
+                sub_message_type = ord(aggregate_data.read(1))
+                print([sub_message_type])
 
                 # Ensure we do not encounter invalid messages.
                 if sub_message_type == 0:
@@ -190,16 +199,27 @@ class RtmpReader(object):
                 else:
                     print('Unknown sub-message, type: %s' % sub_message_type)
 
-                sub_message_size = struct.unpack('!I', '\x00' + aggregate_data[1:4])[0]
-                sub_message_time = struct.unpack('!I', aggregate_data[4:8])[0]
-                sub_message_time |= (ord(aggregate_data[7]) << 24)
+                # Read sub message body length.
+                # sub_message_size = struct.unpack('!I', '\x00' + aggregate_data[1:4])[0]
+                sub_message_size = self.read_24(aggregate_data)
+                print([sub_message_size])
+
+                # TODO: Get the timestamp and stream-id to be read correctly from the data.
+                # sub_message_time = struct.unpack('!I', aggregate_data[4:8])[0]
+                # sub_message_time |= (ord(aggregate_data[7]) << 24)
+                sub_message_time = self.read_24(aggregate_data) | ord(aggregate_data.read(1)[0]) << 24
+                print([sub_message_time])
 
                 # if not set_timestamp:
                 #     base_timestamp = sub_message_time
                 #     set_timestamp = True
 
                 # TODO: Is the stream id correct here.
-                sub_message_stream_id = struct.unpack('<I', aggregate_data[8:12])[0]
+                # sub_message_stream_id = struct.unpack('<I', aggregate_data[8:12])[0]
+                sub_message_stream_id = self.read_24(aggregate_data)
+
+                if first_timestamp is None:
+                    first_timestamp = sub_message_time
 
                 # Generate the message header based on these details.
                 sub_packet = rtmp_packet.RtmpPacket()
@@ -208,40 +228,39 @@ class RtmpReader(object):
                 # print('read aggregate size:', sub_message_size)
 
                 sub_packet.set_type(sub_message_type)
-                sub_packet.set_timestamp(sub_message_time)
+                sub_packet.set_timestamp(sub_message_time - first_timestamp + received_packet.get_timestamp())
                 sub_packet.set_stream_id(sub_message_stream_id)
 
                 # Read the sub message data by skipping past the header.
-                aggregate_data = aggregate_data[11:]
-                sub_message_data = aggregate_data[:sub_message_size]
+                # aggregate_data = aggregate_data[11:]
+                # sub_message_data = aggregate_data[:sub_message_size]
+                sub_message_data = aggregate_data.read(sub_message_size)
+
                 # Set the packet body data.
                 # print('actual data length:', len(sub_message_data))
                 sub_packet.body_buffer = sub_message_data
 
                 # Skip past the message data to parse back-pointer.
-                aggregate_data = aggregate_data[sub_message_size:]
-                back_pointer = struct.unpack('!I', aggregate_data[0:4])[0]
+                # aggregate_data = aggregate_data[sub_message_size:]
+                # back_pointer = struct.unpack('!I', aggregate_data[0:4])[0]
+
+                # Read the total size of the sub-message.
+                total_size = self.read(aggregate_data, '>I')
+
                 # TODO: Figure out why it always outputs that back-pointer and sub message size are not equal.
                 # Solution - Place + 11 to message size.
-                if back_pointer != (sub_message_size + 11):
-                    print('Warning: Aggregate sub-message back-pointer=%r != %r' % (back_pointer, sub_message_size))
-
+                # if back_pointer != (sub_message_size + 11):
+                #     print('Warning: Aggregate sub-message back-pointer=%r != %r' % (back_pointer, sub_message_size))
                 # Skip past back-pointer to read next sub-message.
-                aggregate_data = aggregate_data[4:]
+                # aggregate_data = aggregate_data[4:]
 
                 # Test parsing the audio/video data information.
-                add = self._parse_av_info(sub_message_type, sub_message_data)
+                # add = self._parse_av_info(sub_message_type, sub_message_data)
 
                 # Push the new sub-packet into the RtmpPacket queue.
-                if add is True:
-                    # new_timestamp = received_packet.get_timestamp() + sub_message_time - base_timestamp
-                    # sub_packet.set_timestamp(new_timestamp)
-                    # print('New timestamp set for aggregate:', sub_packet.get_timestamp())
-
-                    # self.total_time += new_timestamp
-                    # print('Final timestamp set:', self.total_time)
-                    self._packet_queue.push(sub_packet)
-                    # print('Added sub-packet to queue.')
+                # if add is True:
+                self._packet_queue.push(sub_packet)
+                # print('Added sub-packet to queue.')
         else:
             if received_packet.header.data_type == enum_rtmp_packet.DT_SET_CHUNK_SIZE:
                 received_packet.body = {
@@ -289,10 +308,10 @@ class RtmpReader(object):
                 if received_packet.header.body_length > 0:
                     # received_packet.header.timestamp = 0
                     received_packet.body_buffer = decoded_body.read()
-                    add = self._parse_av_info(received_packet.header.data_type, received_packet.body_buffer)
+                    # add = self._parse_av_info(received_packet.header.data_type, received_packet.body_buffer)
 
-                    if add is not True:
-                        return None
+                    # if add is not True:
+                    #     return None
                     # else:
                     #     if received_packet.get_timestamp() is not 0:
                     #         self.total_time += received_packet.get_timestamp()
@@ -315,10 +334,10 @@ class RtmpReader(object):
                 if received_packet.header.body_length > 0:
                     # received_packet.header.timestamp = 0
                     received_packet.body_buffer = decoded_body.read()
-                    add = self._parse_av_info(received_packet.header.data_type, received_packet.body_buffer)
+                    # add = self._parse_av_info(received_packet.header.data_type, received_packet.body_buffer)
 
-                    if add is not True:
-                        return None
+                    # if add is not True:
+                    #     return None
                     # else:
                     #     if received_packet.get_timestamp() is not 0:
                     #         self.total_time += received_packet.get_timestamp()
@@ -392,6 +411,19 @@ class RtmpReader(object):
         :return: Boolean
         """
         return self._packet_queue.empty()
+
+    @staticmethod
+    def read(byte_buffer, s):
+        return struct.unpack(s, byte_buffer.read(struct.calcsize(s)))
+
+    @staticmethod
+    def read_24(byte_buffer):
+        """
+
+        :return:
+        """
+        a, b, c = byte_buffer.read(3)
+        return ord(a) << 16 | ord(b) << 8 | ord(c)
 
     @staticmethod
     def _parse_av_info(message_type, message_data):

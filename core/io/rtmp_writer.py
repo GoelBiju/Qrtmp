@@ -16,14 +16,16 @@ log = logging.getLogger(__name__)
 
 
 class FLV(object):
-    '''An FLV file which converts between RTMP message and FLV tags.'''
+    """
+    An FLV file which converts between RTMP message and FLV tags.
+    """
 
     def __init__(self):
         self.fname = self.fp = self.type = None
-        self.tsp = self.tsr = 0;
+        self.tsp = self.tsr = 0
         self.tsr0 = None
 
-    def open(self, path, type='read', mode=0775):
+    def open(self, path, type='read', mode=0o0775):
         '''Open the file for reading (type=read) or writing (type=record or append).'''
         if str(path).find('/../') >= 0 or str(path).find('\\..\\') >= 0: raise ValueError('Must not contain .. in name')
         # if _debug: print 'opening file', path

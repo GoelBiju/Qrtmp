@@ -216,7 +216,7 @@ class NetConnection(base_connection.BaseConnection):
             self._handle_messages_return = bool(new_option)
             print('Changed handle messages return to: {0}'.format(new_option))
         except TypeError:
-            print 'Handle messages return can only be True/False.'
+            print('Handle messages return can only be True/False.')
 
     def read_message(self):
         """
@@ -346,6 +346,7 @@ class NetConnection(base_connection.BaseConnection):
         """
 
         :param stream_name:
+        :param start_time:
         :return:
         """
         play_call = self._rtmp_writer.new_packet()
