@@ -34,6 +34,9 @@ class RtmpReader(object):
 
         self.chunk_size = 128
 
+        self.prevts = {}
+        self.tsoffset = {}
+
     def __iter__(self):
         """
         

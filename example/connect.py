@@ -55,14 +55,14 @@ nc = net_connection.NetConnection()
 # TODO: Implement getStreamLength to get duration for stream.
 # TODO: Incorrect reading of timestamps in aggregate messages.
 
-nc.set_rtmp_server('s3b78u0kbtx79q.cloudfront.net')
-# nc.set_rtmp_server('184.18.181.10')
-tc_url = 'rtmp://s3b78u0kbtx79q.cloudfront.net:1935/cfx/st'
-# tc_url = 'rtmp://10.bteradio.com/vod'
-# swf_url = 'http://bteradio.com/swfs/videoPlayer.swf'
-# page_url = 'http://bteradio.com/BTEPlayer.html?source=rtmp://10.bteradio.com/vod/test.flv&type=vod&idx=8'
-nc.set_rtmp_parameters('cfx/st', tc_url=tc_url)
-# nc.set_rtmp_parameters('vod', tc_url=tc_url)
+# nc.set_rtmp_server('s3b78u0kbtx79q.cloudfront.net')
+nc.set_rtmp_server('184.18.181.10')
+# tc_url = 'rtmp://s3b78u0kbtx79q.cloudfront.net:1935/cfx/st'
+tc_url = 'rtmp://10.bteradio.com/vod'
+swf_url = 'http://bteradio.com/swfs/videoPlayer.swf'
+page_url = 'http://bteradio.com/BTEPlayer.html?source=rtmp://10.bteradio.com/vod/test.flv&type=vod&idx=8'
+# nc.set_rtmp_parameters('cfx/st', tc_url=tc_url)
+nc.set_rtmp_parameters('vod', tc_url=tc_url)
 
 nc.flash_ver = nc.windows_flash_version
 nc.set_handle_messages(True)
@@ -82,10 +82,30 @@ def loop():
                 message_type = message.get_type()
                 # Handle audio/video messages coming through in order to save them.
                 if message_type == 0x08 or message_type == 0x09:
-                    print('A/V:', message)
+
+                    d = message.get_timestamp() - nc._rtmp_reader.prevts.get((message.get_stream_id(),
+                                                                             message.get_type()), 0)
+                    offset = nc._rtmp_reader.tsoffset.get((message.get_stream_id(), message.get_type()), 0)
+
+                    if d < 0:
+                        # log.warning('Timestamp moving backwards! stream=%i, type=%i, d=%i, from %i to %i',
+                        #             m.streamid, m.type, d, m.timestamp - d, m.timestamp)
+                        print('Timestamp moving backwards.')
+                        offset -= d
+                        nc._rtmp_reader.tsoffset[message.get_stream_id(), message.get_type()] = offset
+
+                    elif d > 2000:
+                        # log.warning('Timestamp jumping forwards! stream=%i, type=%i, d=%i, from %i to %i',
+                        #             m.streamid, m.type, d, m.timestamp - d, m.timestamp)
+                        print('Timestamp jumping forward.')
+
+                    nc._rtmp_reader.prevts[message.get_stream_id(), message.get_type()] = message.get_timestamp()
+
+                    message.set_timestamp(message.get_timestamp() + offset)
+
                     # print(message.body_buffer)
                     flv_writer.write(message)
-                    print('Written A/V message to file.')
+                    print('Written A/V message to file:', repr(message))
 
                 elif message_type == 0x12 and message.get_body() is not None:
                     message_body = message.get_body()
@@ -114,5 +134,5 @@ nc.call('createStream')
 nc.messages.send_set_buffer_length(1, 36000000)
 
 # Make a call to receive video/audio data from a stream.
-nc.play('honda_accord', start_time=-1)
-# nc.play('test', start_time=-1)
+# nc.play('honda_accord', start_time=-1)
+nc.play('test', start_time=-1)

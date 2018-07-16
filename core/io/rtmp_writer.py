@@ -116,9 +116,11 @@ class FLV(object):
                            ts & 0x0ffff, (ts >> 24) & 0xff) + '\x00\x00\x00' + data
         data += struct.pack('>I', len(data))
         lastpos = self.fp.tell()
-        if lastpos != 13: self.fp.seek(13, os.SEEK_SET)
+        if lastpos != 13:
+            self.fp.seek(13, os.SEEK_SET)
         self.fp.write(data)
-        if lastpos != 13: self.fp.seek(lastpos, os.SEEK_SET)
+        if lastpos != 13:
+            self.fp.seek(lastpos, os.SEEK_SET)
 
     def write(self, message):
         '''Write a message to the file, assuming it was opened for writing or appending.'''
