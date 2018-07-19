@@ -83,6 +83,8 @@ def loop():
                 # Handle audio/video messages coming through in order to save them.
                 if message_type == 0x08 or message_type == 0x09:
 
+                    # print('Message original timestamp:', message.get_timestamp())
+
                     d = message.get_timestamp() - nc._rtmp_reader.prevts.get((message.get_stream_id(),
                                                                              message.get_type()), 0)
                     offset = nc._rtmp_reader.tsoffset.get((message.get_stream_id(), message.get_type()), 0)
@@ -105,7 +107,10 @@ def loop():
 
                     # print(message.body_buffer)
                     flv_writer.write(message)
-                    print('Written A/V message to file:', repr(message))
+                    # print('Written A/V message to file:', repr(message))
+
+                    if message.get_timestamp() == 31596:
+                        flv_writer.close()
 
                 elif message_type == 0x12 and message.get_body() is not None:
                     message_body = message.get_body()

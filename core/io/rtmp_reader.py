@@ -211,7 +211,7 @@ class RtmpReader(object):
                 # sub_message_time = struct.unpack('!I', aggregate_data[4:8])[0]
                 # sub_message_time |= (ord(aggregate_data[7]) << 24)
                 sub_message_time = self.read_24(aggregate_data) | ord(aggregate_data.read(1)[0]) << 24
-                print([sub_message_time])
+                print('Read timestamp from data:', [sub_message_time])
 
                 # if not set_timestamp:
                 #     base_timestamp = sub_message_time
@@ -232,6 +232,7 @@ class RtmpReader(object):
 
                 sub_packet.set_type(sub_message_type)
                 sub_packet.set_timestamp(sub_message_time - first_timestamp + received_packet.get_timestamp())
+                print('Set timestamp on sub-message:', sub_packet.get_timestamp())
                 sub_packet.set_stream_id(sub_message_stream_id)
 
                 # Read the sub message data by skipping past the header.

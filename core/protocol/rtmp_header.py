@@ -238,37 +238,60 @@ class RtmpHeaderHandler:
         decoded_header = RtmpHeader(chunk_stream_id)
         decoded_header.chunk_type = chunk_type
 
+        # TODO: Fix audio/video and aggregate packets by adding the timestamp delta from a chunk-type of 1, 2
+        #       to the absolute timestamp received from a chunk-type of 0.
         if chunk_type == enum_rtmp_header.HR_TYPE_3_CONTINUATION:
             # print('Decoded header:', repr(decoded_header))
 
             # Handle red5 server ping request which has defines no data-type and
             # is sent as a continuation header.
-            if chunk_stream_id == enum_rtmp_header.CS_CONTROL:
-                decoded_header.data_type = 4
-                decoded_header.body_length = 6
+            # if chunk_stream_id == enum_rtmp_header.CS_CONTROL:
+            #     decoded_header.data_type = 4
+            #     decoded_header.body_length = 6
+
+            # TODO: According to rtmp2flv, contrary to the RTMP specification, the extended timestamp may also
+            # be present in an continuation header.
+            # if decoded_header.timestamp == 16777215:
+            #     decoded_header.extended_timestamp = self._rtmp_stream.read_ulong()
+            # else:
+            #     decoded_header.extended_timestamp = None
+
             return decoded_header
 
         if chunk_type == enum_rtmp_header.HR_TYPE_2_SAME_LENGTH_AND_STREAM:
+
+            # TODO: Timestamp delta only.
             decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
 
             decoded_header.timestamp_delta = True
 
         elif chunk_type == enum_rtmp_header.HR_TYPE_1_SAME_STREAM:
+
+            # TODO: Timestamp delta only.
             decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
 
+            # Body length.
             decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
 
+            # Message type.
             decoded_header.data_type = self._rtmp_stream.read_uchar()
+
 
             decoded_header.timestamp_delta = True
 
         elif chunk_type == enum_rtmp_header.HR_TYPE_0_FULL:
+
+            # TODO: Absolute timestamp received. No timestamp delta.
             decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
 
+            # Length of message.
             decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
 
+            # Message type.
             decoded_header.data_type = self._rtmp_stream.read_uchar()
 
+            # Message stream id in little-endian order.
+            # TODO: Find out what is little-endian/endian order.
             self._rtmp_stream.endian = '<'
             decoded_header.stream_id = self._rtmp_stream.read_ulong()
             self._rtmp_stream.endian = '!'
