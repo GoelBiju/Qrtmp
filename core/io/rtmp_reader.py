@@ -3,7 +3,7 @@
 import logging
 import struct
 # import threading
-import time
+# import time
 import io
 
 import pyamf
@@ -76,11 +76,10 @@ class RtmpReader(object):
             # next_header = self._reader_header_handler.decode_from_stream()
             # Get the next header and body to parse.
             self._reader_header_handler.decode_from_stream()
-            if decoded_header.timestamp >= 16777215:
+            if decoded_header.absolute_timestamp >= 16777215 or decoded_header.timestamp_delta >= 16777215:
                 self._reader_stream.read_ulong()
 
-            # TODO: I am not sure if these assertions work in the case when we have
-            #       aggregate or audio/video messages.
+            # TODO: Do these assertions work in the case when we have aggregate or audio/video messages?
             # assert next_header.timestamp == -1, (decoded_header, next_header)
             # assert next_header.body_length == -1, (decoded_header, next_header)
             # assert next_header.data_type == -1, (decoded_header, next_header)
@@ -231,8 +230,9 @@ class RtmpReader(object):
                 # print('read aggregate size:', sub_message_size)
 
                 sub_packet.set_type(sub_message_type)
-                sub_packet.set_timestamp(sub_message_time - first_timestamp + received_packet.get_timestamp())
-                print('Set timestamp on sub-message:', sub_packet.get_timestamp())
+                sub_packet.set_absolute_timestamp(sub_message_time - first_timestamp +
+                                                  received_packet.get_absolute_timestamp())
+                print('Set absolute timestamp on sub-message:', sub_packet.get_absolute_timestamp())
                 sub_packet.set_stream_id(sub_message_stream_id)
 
                 # Read the sub message data by skipping past the header.

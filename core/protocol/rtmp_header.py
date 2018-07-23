@@ -25,28 +25,38 @@ class RtmpHeader(object):
     An RTMP Header which holds contextual information regarding an RTMP Channel,
     along with the information regarding the payload it will be carrying.
     """
-    __slots__ = ['chunk_type', 'chunk_stream_id', 'timestamp', 'body_length', 'data_type', 'stream_id',
-                 'extended_timestamp', 'timestamp_delta', 'timestamp_absolute']
+    __slots__ = ['chunk_type', 'chunk_stream_id', 'data_type', 'body_length', 'stream_id',
+                 'absolute_timestamp', 'timestamp_delta', 'extended_timestamp']
 
-    # TODO: Store the absolute timestamp and timestamp delta correctly.
-    def __init__(self, chunk_stream_id, timestamp=-1, body_length=-1, data_type=-1, stream_id=-1):
+    def __init__(self, chunk_stream_id, absolute_timestamp=-1, body_length=-1, data_type=-1, stream_id=-1):
         """
         
         :param chunk_stream_id:
-        :param timestamp:
+        :param absolute_timestamp:
         :param body_length:
         :param data_type:
         :param stream_id:
         """
         self.chunk_type = -1
         self.chunk_stream_id = int(chunk_stream_id)
-        self.timestamp = int(timestamp)
-        self.body_length = int(body_length)
         self.data_type = int(data_type)
+        self.body_length = int(body_length)
         self.stream_id = int(stream_id)
+
+        # TODO: Replace one common timestamp attribute with two attributes:
+        #       absolute timestamp and a timestamp delta.
+        # self.timestamp = int(timestamp)
+        self.absolute_timestamp = int(absolute_timestamp)
+        self.timestamp_delta = -1
+
+        # TODO: Is this applicable and does this relate to the absolute timestamp
+        #       or the timestamp delta?
         self.extended_timestamp = -1
-        self.timestamp_delta = False
-        self.timestamp_absolute = False
+
+        # TODO: State if the header's timestamp includes an absolute timestamp or
+        #       a timestamp delta.
+        # self.has_absolute_timestamp = False
+        # self.has_timestamp_delta = False
 
     def __repr__(self):
         """
@@ -74,42 +84,19 @@ class RtmpHeaderHandler:
 
     def __init__(self, rtmp_stream):
         """
-        
-        
+
         :param rtmp_stream:
         @type rtmp_stream: L{pyamf.util.BufferedByteStream}.
         """
         self._rtmp_stream = rtmp_stream
 
-    @staticmethod
-    def _get_header_mask(latest_full_header, header_to_encode):
-        """
-        Returns the number of bytes needed to encode the header based on the differences between the two.
-        
-        NOTE: Both headers must be from the same chunk stream in order for this to work.
-              By comparing the size of the header we need to encode into the stream, we can reduce overhead in formats
-              by only writing the necessary parts of the header.
-        
-        :param latest_full_header: the last full header that we received in this chunk stream.
-        @type latest_full_header: L{RtmpHeader}
-        :param header_to_encode: the header we need to encode into the RTMP stream.
-        @type header_to_encode: L{RtmpHeader}
-        """
-        if latest_full_header.chunk_stream_id == header_to_encode.chunk_stream_id:
+        # A dictionary with each key being a present chunk-stream id
+        # to keep data relevant on each header that is received.
+        self._prev_received_headers = {}
 
-            if latest_full_header is header_to_encode:
-                return 192
-
-            if latest_full_header.stream_id != header_to_encode.stream_id:
-                return 0
-
-            if latest_full_header.data_type == header_to_encode.data_type and \
-                    latest_full_header.body_length == header_to_encode.body_length:
-
-                if latest_full_header.timestamp == header_to_encode.timestamp:
-                    return 192
-                return 128
-            return 64
+        # TODO: Implement previously sent headers to help with choosing
+        #       what chunk type to send the next header with.
+        # self._prev_sent_headers = {}
 
     def encode_into_stream(self, encode_header, previous=None):
         """
@@ -167,7 +154,7 @@ class RtmpHeaderHandler:
             return
 
         if mask == 128:
-            if encode_header.timestamp >= 16777215:
+            if encode_header.absolute_timestamp >= 16777215:
                 self._rtmp_stream.write_24bit_uint(16777215)
             else:
                 self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
@@ -175,34 +162,34 @@ class RtmpHeaderHandler:
             encode_header.timestamp_delta = True
 
         elif mask == 64:
-            if encode_header.timestamp >= 16777215:
+            if encode_header.absolute_timestamp >= 16777215:
                 self._rtmp_stream.write_24bit_uint(16777215)
             else:
-                self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
+                self._rtmp_stream.write_24bit_uint(encode_header.absolute_timestamp)
 
             self._rtmp_stream.write_24bit_uint(encode_header.body_length)
 
             self._rtmp_stream.write_uchar(encode_header.data_type)
 
-            encode_header.timestamp_delta = True
+            # encode_header.timestamp_delta = True
 
         elif mask == 0:
-            if encode_header.timestamp >= 16777215:
+            if encode_header.absolute_timestamp >= 16777215:
                 self._rtmp_stream.write_24bit_uint(16777215)
             else:
-                self._rtmp_stream.write_24bit_uint(encode_header.timestamp)
+                self._rtmp_stream.write_24bit_uint(encode_header.absolute_timestamp)
 
             self._rtmp_stream.write_24bit_uint(encode_header.body_length)
             self._rtmp_stream.write_uchar(encode_header.data_type)
             self._rtmp_stream.endian = '<'
             self._rtmp_stream.write_ulong(encode_header.stream_id)
             self._rtmp_stream.endian = '!'
-            encode_header.timestamp_absolute = True
+            # encode_header.timestamp_absolute = True
 
-        if encode_header.timestamp >= 16777215:
-            self._rtmp_stream.write_ulong(encode_header.timestamp)
+        if encode_header.absolute_timestamp >= 16777215:
+            self._rtmp_stream.write_ulong(encode_header.absolute_timestamp)
 
-            encode_header.extended_timestamp = encode_header.timestamp
+            encode_header.extended_timestamp = encode_header.absolute_timestamp
         else:
             encode_header.extended_timestamp = None
 
@@ -256,19 +243,35 @@ class RtmpHeaderHandler:
             # else:
             #     decoded_header.extended_timestamp = None
 
+            if chunk_stream_id in self._prev_received_headers:
+                previous_header = self._prev_received_headers[chunk_stream_id]
+
+                decoded_header.timestamp_delta = previous_header.timestamp_delta
+                decoded_header.absolute_timestamp = previous_header.absolute_timestamp + decoded_header.timestamp_delta
+                decoded_header.body_length = previous_header.body_length
+                decoded_header.data_type = previous_header.data_type
+                decoded_header.stream_id = previous_header.stream_id
+
             return decoded_header
 
         if chunk_type == enum_rtmp_header.HR_TYPE_2_SAME_LENGTH_AND_STREAM:
-
             # TODO: Timestamp delta only.
-            decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+            # decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+            decoded_header.timestamp_delta = self._rtmp_stream.read_24bit_uint()
 
-            decoded_header.timestamp_delta = True
+            if chunk_stream_id in self._prev_received_headers:
+                previous_header = self._prev_received_headers[chunk_stream_id]
+
+                decoded_header.body_length = previous_header.body_length
+                decoded_header.stream_id = previous_header.stream_id
+                decoded_header.absolute_timestamp = previous_header.absolute_timestamp + decoded_header.timestamp_delta
+
+            # decoded_header.timestamp_delta = True
 
         elif chunk_type == enum_rtmp_header.HR_TYPE_1_SAME_STREAM:
-
             # TODO: Timestamp delta only.
-            decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+            # decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+            decoded_header.timestamp_delta = self._rtmp_stream.read_24bit_uint()
 
             # Body length.
             decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
@@ -276,13 +279,24 @@ class RtmpHeaderHandler:
             # Message type.
             decoded_header.data_type = self._rtmp_stream.read_uchar()
 
+            # Use the previous header from the chunk stream to create
+            # the missing header information.
+            if chunk_stream_id in self._prev_received_headers:
+                previous_header = self._prev_received_headers[chunk_stream_id]
 
-            decoded_header.timestamp_delta = True
+                decoded_header.stream_id = previous_header.stream_id
+                decoded_header.absolute_timestamp = previous_header.absolute_timestamp + decoded_header.timestamp_delta
+            else:
+                decoded_header.stream_id = 0
+                decoded_header.absolute_timestamp = decoded_header.timestamp_delta
+
+            # decoded_header.timestamp_delta = True
 
         elif chunk_type == enum_rtmp_header.HR_TYPE_0_FULL:
-
             # TODO: Absolute timestamp received. No timestamp delta.
-            decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+            # decoded_header.timestamp = self._rtmp_stream.read_24bit_uint()
+            decoded_header.absolute_timestamp = self._rtmp_stream.read_24bit_uint()
+            decoded_header.timestamp_delta = 0
 
             # Length of message.
             decoded_header.body_length = self._rtmp_stream.read_24bit_uint()
@@ -296,12 +310,46 @@ class RtmpHeaderHandler:
             decoded_header.stream_id = self._rtmp_stream.read_ulong()
             self._rtmp_stream.endian = '!'
 
-            decoded_header.timestamp_absolute = True
+            # State we have received an absolute timestamp.
+            # decoded_header.timestamp_absolute = True
 
-        if decoded_header.timestamp == 16777215:
+        if decoded_header.absolute_timestamp == 16777215 or decoded_header.timestamp_delta == 16777215:
             decoded_header.extended_timestamp = self._rtmp_stream.read_ulong()
         else:
             decoded_header.extended_timestamp = None
 
+        # Before we return the decoded header, store it in the correct chunk stream's previous headers.
+        self._prev_received_headers[chunk_stream_id] = decoded_header
+
         # print('Decoded header:', repr(decoded_header))
         return decoded_header
+
+    @staticmethod
+    def _get_header_mask(latest_full_header, header_to_encode):
+        """
+        Returns the number of bytes needed to encode the header based on the differences between the two.
+
+        NOTE: Both headers must be from the same chunk stream in order for this to work.
+              By comparing the size of the header we need to encode into the stream, we can reduce overhead in formats
+              by only writing the necessary parts of the header.
+
+        :param latest_full_header: the last full header that we received in this chunk stream.
+        @type latest_full_header: L{RtmpHeader}
+        :param header_to_encode: the header we need to encode into the RTMP stream.
+        @type header_to_encode: L{RtmpHeader}
+        """
+        if latest_full_header.chunk_stream_id == header_to_encode.chunk_stream_id:
+
+            if latest_full_header is header_to_encode:
+                return 192
+
+            if latest_full_header.stream_id != header_to_encode.stream_id:
+                return 0
+
+            if latest_full_header.data_type == header_to_encode.data_type and \
+                    latest_full_header.body_length == header_to_encode.body_length:
+
+                if latest_full_header.absolute_timestamp == header_to_encode.absolute_timestamp:
+                    return 192
+                return 128
+            return 64

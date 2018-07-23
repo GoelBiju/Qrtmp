@@ -119,7 +119,7 @@ class NetConnection(base_connection.BaseConnection):
         """
         print('Creating RTMP "connect" message.')
         connection_message = self._rtmp_writer.new_packet()
-        connection_message.set_timestamp(0)
+        connection_message.set_absolute_timestamp(0)
         connection_message.set_type(enum_rtmp_packet.DT_COMMAND)
         connection_message.set_stream_id(0)
         print('Generated connection message header: {0}'.format(connection_message.header))

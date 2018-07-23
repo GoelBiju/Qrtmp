@@ -131,7 +131,7 @@ class FLV(object):
         if message.get_type() == enum_rtmp_packet.DT_AUDIO_MESSAGE or message.get_type() == enum_rtmp_packet.DT_VIDEO_MESSAGE:
             # length, ts = message.size, message.time
             # TODO: Timestamp issue - does not match what is actually downloaded.
-            length, ts = message.get_body_length(), message.get_timestamp()
+            length, ts = message.get_body_length(), message.get_absolute_timestamp()
             # if _debug: print 'FLV.write()', message.type, ts
             print('FLV.write()', message.get_type(), ts)
             if self.tsr0 is None: self.tsr0 = ts - self.tsr1

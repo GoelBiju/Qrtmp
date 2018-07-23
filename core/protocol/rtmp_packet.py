@@ -6,7 +6,7 @@ from core.protocol.types import enum_rtmp_packet
 
 class RtmpPacket(object):
     """ A class to abstract the RTMP formats (received) which consists of an RTMP header and an RTMP body. """
-    __slots__ = ['header', 'body', 'body_buffer', 'timestamp_absolute', 'timestamp_delta',
+    __slots__ = ['header', 'body', 'body_buffer', # 'timestamp_absolute', 'timestamp_delta'
                  'body_is_amf', 'transaction_id', 'is_inbound', 'handled']
 
     # TODO: Transaction id to identify response from server
@@ -41,13 +41,15 @@ class RtmpPacket(object):
         if set_header is not None:
             self.header.chunk_type = set_header.chunk_type
             self.header.chunk_stream_id = set_header.chunk_stream_id
-            self.header.timestamp = set_header.timestamp
-            self.header.body_length = set_header.body_length
             self.header.data_type = set_header.data_type
+            self.header.body_length = set_header.body_length
             self.header.stream_id = set_header.stream_id
+            # self.header.timestamp = set_header.timestamp
+            self.header.absolute_timestamp = set_header.absolute_timestamp
+            self.header.timestamp_delta = set_header.timestamp_delta
             self.header.extended_timestamp = set_header.extended_timestamp
-            self.timestamp_absolute = set_header.timestamp_absolute
-            self.timestamp_delta = set_header.timestamp_delta
+            # self.timestamp_absolute = set_header.timestamp_absolute
+            # self.timestamp_delta = set_header.timestamp_delta
 
         if set_body is not None:
             self.body = set_body
@@ -65,20 +67,20 @@ class RtmpPacket(object):
         """
         return self.header.chunk_stream_id
 
-    def get_timestamp(self):
+    def get_type(self):
         """
-        A convenience method to allow the message timestamp to be retrieved without having to
+        A convenience method to allow the message data-type to be retrieved without having to
         point to the RtmpHeader directly.
-        
-        :return header.timestamp:
+
+        :return header.data_type:
         """
-        return self.header.timestamp
+        return self.header.data_type
 
     def get_body_length(self):
         """
         A convenience method to allow the message body length from the body buffer without having to
         point to the packet directly.
-        
+
         :return len(body_buffer):
         """
         # TODO: body buffer may be None
@@ -87,23 +89,44 @@ class RtmpPacket(object):
         else:
             return self.header.body_length
 
-    def get_type(self):
-        """
-        A convenience method to allow the message data-type to be retrieved without having to
-        point to the RtmpHeader directly.
-        
-        :return header.data_type:
-        """
-        return self.header.data_type
-
     def get_stream_id(self):
         """
         A convenience method to allow the message stream id to be retrieved without having to
         point to the RtmpHeader directly.
-        
+
         :return header.stream_id:
         """
         return self.header.stream_id
+
+    # def get_timestamp(self):
+    #     """
+    #     A convenience method to allow the message timestamp to be retrieved without having to
+    #     point to the RtmpHeader directly.
+    #
+    #     :return header.timestamp:
+    #     """
+    #     return self.header.timestamp
+
+    def get_absolute_timestamp(self):
+        """
+
+        :return:
+        """
+        return self.header.absolute_timestamp
+
+    def get_timestamp_delta(self):
+        """
+
+        :return:
+        """
+        return self.header.timestamp_delta
+
+    def get_extended_timestamp(self):
+        """
+
+        :return:
+        """
+        return self.header.extended_timestamp
 
     def set_chunk_stream_id(self, new_chunk_stream_id):
         """
@@ -114,14 +137,14 @@ class RtmpPacket(object):
         """
         self.header.chunk_stream_id = new_chunk_stream_id
 
-    def set_timestamp(self, new_timestamp):
-        """
-        A convenience method ot allow the message timestamp to be set without having to
-        point to the RtmpPacket header initially.
-        
-        :param new_timestamp:
-        """
-        self.header.timestamp = new_timestamp
+    # def set_timestamp(self, new_timestamp):
+    #     """
+    #     A convenience method ot allow the message timestamp to be set without having to
+    #     point to the RtmpPacket header initially.
+    #
+    #     :param new_timestamp:
+    #     """
+    #     self.header.timestamp = new_timestamp
 
     def set_type(self, new_data_type):
         """
@@ -140,6 +163,16 @@ class RtmpPacket(object):
         :param new_stream_id:
         """
         self.header.stream_id = new_stream_id
+
+    # TODO: Handle extended timestamp if the set absolute timestamp is
+    #       greater than the set limit.
+    def set_absolute_timestamp(self, new_abs_timestamp):
+        """
+
+        :param new_abs_timestamp:
+        :return:
+        """
+        self.header.absolute_timestamp = new_abs_timestamp
 
     def get_command_name(self):
         """
@@ -214,22 +247,25 @@ class RtmpPacket(object):
         self.body = None
 
     def finalise(self):
-        """ """
+        """
+        """
         if self.body_buffer is not None:
             # TODO: This is only for sending the packet and reading packets header is first
             #       point of information for body size.
             self.header.body_length = len(self.body_buffer)
 
-        if self.header.timestamp is -1:
-            self.header.timestamp = 0
+        # TODO: If we start sending on correct chunk type to server then we should not use this;
+        #       either correct absolute timestamp or timestamp delta sent.
+        if self.header.absolute_timestamp is -1:
+            self.header.absolute_timestamp = 0
 
     def reset(self):
         """ Resets the packet's contents to the original form with an invalid header and body. """
         self.header = rtmp_header.RtmpHeader(-1)
         self.body = None
         self.body_buffer = None
-        self.timestamp_absolute = None
-        self.timestamp_delta = None
+        # self.timestamp_absolute = None
+        # self.timestamp_delta = None
 
         self.body_is_amf = False
         self.is_inbound = False
@@ -241,10 +277,10 @@ class RtmpPacket(object):
         
         :return repr: str printable representation of the header's attributes.
         """
-        return '<RtmpPacket.header> chunk_type=%s chunk_stream_id=%s timestamp=%s body_length=%s data_type=%s ' \
-               'stream_id=%s extended_timestamp=%s (timestamp_delta=%s, timestamp_absolute=%s) ' \
+        return '<RtmpPacket.header> chunk_type=%s chunk_stream_id=%s data_type=%s body_length=%s stream_id=%s ' \
+               'absolute_timestamp=%s timestamp_delta=%s extended_timestamp=%s' \
                '<inbound:%s> <handled:%s> <A/V Body Buffer:%s>' % \
-               (self.header.chunk_type, self.header.chunk_stream_id, self.header.timestamp,
-                self.header.body_length, self.header.data_type, self.header.stream_id,
-                self.header.extended_timestamp, self.header.timestamp_delta, self.header.timestamp_absolute,
+               (self.header.chunk_type, self.header.chunk_stream_id, self.header.data_type, self.header.body_length,
+                self.header.stream_id, self.header.absolute_timestamp, self.header.timestamp_delta,
+                self.header.extended_timestamp,
                 self.is_inbound, self.handled, self.body_buffer is not None)

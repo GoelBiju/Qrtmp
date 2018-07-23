@@ -55,14 +55,14 @@ nc = net_connection.NetConnection()
 # TODO: Implement getStreamLength to get duration for stream.
 # TODO: Incorrect reading of timestamps in aggregate messages.
 
-# nc.set_rtmp_server('s3b78u0kbtx79q.cloudfront.net')
-nc.set_rtmp_server('184.18.181.10')
-# tc_url = 'rtmp://s3b78u0kbtx79q.cloudfront.net:1935/cfx/st'
-tc_url = 'rtmp://10.bteradio.com/vod'
-swf_url = 'http://bteradio.com/swfs/videoPlayer.swf'
-page_url = 'http://bteradio.com/BTEPlayer.html?source=rtmp://10.bteradio.com/vod/test.flv&type=vod&idx=8'
-# nc.set_rtmp_parameters('cfx/st', tc_url=tc_url)
-nc.set_rtmp_parameters('vod', tc_url=tc_url)
+nc.set_rtmp_server('s3b78u0kbtx79q.cloudfront.net')
+# nc.set_rtmp_server('184.18.181.10')
+tc_url = 'rtmp://s3b78u0kbtx79q.cloudfront.net:1935/cfx/st'
+# tc_url = 'rtmp://10.bteradio.com/vod'
+# swf_url = 'http://bteradio.com/swfs/videoPlayer.swf'
+# page_url = 'http://bteradio.com/BTEPlayer.html?source=rtmp://10.bteradio.com/vod/test.flv&type=vod&idx=8'
+nc.set_rtmp_parameters('cfx/st', tc_url=tc_url)
+# nc.set_rtmp_parameters('vod', tc_url=tc_url)
 
 nc.flash_ver = nc.windows_flash_version
 nc.set_handle_messages(True)
@@ -85,7 +85,7 @@ def loop():
 
                     # print('Message original timestamp:', message.get_timestamp())
 
-                    d = message.get_timestamp() - nc._rtmp_reader.prevts.get((message.get_stream_id(),
+                    d = message.get_absolute_timestamp() - nc._rtmp_reader.prevts.get((message.get_stream_id(),
                                                                              message.get_type()), 0)
                     offset = nc._rtmp_reader.tsoffset.get((message.get_stream_id(), message.get_type()), 0)
 
@@ -101,15 +101,15 @@ def loop():
                         #             m.streamid, m.type, d, m.timestamp - d, m.timestamp)
                         print('Timestamp jumping forward.')
 
-                    nc._rtmp_reader.prevts[message.get_stream_id(), message.get_type()] = message.get_timestamp()
+                    nc._rtmp_reader.prevts[message.get_stream_id(), message.get_type()] = message.get_absolute_timestamp()
 
-                    message.set_timestamp(message.get_timestamp() + offset)
+                    message.set_absolute_timestamp(message.get_absolute_timestamp() + offset)
 
                     # print(message.body_buffer)
                     flv_writer.write(message)
                     # print('Written A/V message to file:', repr(message))
 
-                    if message.get_timestamp() == 31596:
+                    if message.get_absolute_timestamp() == 31596:
                         flv_writer.close()
 
                 elif message_type == 0x12 and message.get_body() is not None:
@@ -139,5 +139,5 @@ nc.call('createStream')
 nc.messages.send_set_buffer_length(1, 36000000)
 
 # Make a call to receive video/audio data from a stream.
-# nc.play('honda_accord', start_time=-1)
-nc.play('test', start_time=-1)
+nc.play('honda_accord', start_time=-1)
+# nc.play('test', start_time=-1)
