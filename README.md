@@ -1,5 +1,8 @@
 # Qrtmp
 
+**DEPRECATED:** As Flash technology went away, so did RTMP. As a result this library is not maintained. 
+*P.S. this is a README edit I'm making in 2025!*
+
 ### What is this?
 
 Qrtmp ("Quick RTMP") is a lightweight package to interface, as a client, with applications and platforms (e.g. servers) that work by using the Real Time Message Protocol. 
