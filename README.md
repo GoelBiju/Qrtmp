@@ -22,7 +22,7 @@ The package can be installed simply by executing:
 
 ### Example
 
-To demonstrate some basic functionality, a very basic RTMP connection is illustrated within the [*rtmp_connect.py*](https://github.com/) script.
+To demonstrate some basic functionality, a very basic RTMP connection is illustrated within the [*rtmp_connect.py*](./examples/rtmp_connect.py) script.
 
 ### Usage
 
